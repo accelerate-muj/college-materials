@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Read-only: this workflow inspects the repository, it never writes to it.
+permissions:
+  contents: read
+
+# Actions are pinned to full commit SHAs because the organisation enables
+# `sha_pinning_required` (see SETUP_LOG.md decisions #36/#55 in accelerate-muj/.github).
+# A movable tag like @v4 is rejected at the org level and the run will not start.
+# The trailing comment records which tag each SHA was, so upgrades stay legible.
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+
+      # No install step: the project has no dependencies, by design.
+      - name: Run test suite
+        run: node tests/run.js
+
+  data:
+    name: Data integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+
+      # Most PRs to this repo are contributed JSON rather than code, so a
+      # malformed record is the realistic failure mode, not a theoretical one.
+      - name: Validate every paper record
+        run: node .github/scripts/validate-data.js
+
+      # pyq/data.js is generated from data/pyq/ by build.js. If a PR edits one
+      # and not the other, the site silently serves the old archive — a failure
+      # that is invisible without this check.
+      - name: Check pyq/data.js is in sync with data/
+        run: |
+          set -euo pipefail
+          node build.js
+          if ! git diff --quiet -- pyq/data.js; then
+            echo "::error file=pyq/data.js::pyq/data.js is out of sync with data/pyq/. Run 'node build.js' and commit the result."
+            git diff --stat -- pyq/data.js
+            exit 1
+          fi
+          echo "pyq/data.js matches data/pyq/."
+
+      # Same reasoning for the embedded fonts: if somebody swaps a .woff2 and
+      # forgets to regenerate, the site keeps serving the old face with no
+      # visible error.
+      - name: Check assets/fonts/fonts.css is in sync with the .woff2 files
+        run: |
+          set -euo pipefail
+          node build-fonts.js
+          if ! git diff --quiet -- assets/fonts/fonts.css; then
+            echo "::error file=assets/fonts/fonts.css::Out of sync with assets/fonts/*.woff2. Run 'node build-fonts.js' and commit the result."
+            exit 1
+          fi
+          echo "assets/fonts/fonts.css matches the committed .woff2 files."
+
+  links:
+    name: Internal links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # The site is hand-written HTML with no framework to catch a mistyped
+      # href, and a broken stylesheet path only shows up as an unstyled page.
+      - name: Check referenced local files exist
+        run: |
+          set -euo pipefail
+          status=0
+          while IFS=: read -r file ref; do
+            [ -z "${ref:-}" ] && continue
+            target="$(dirname "$file")/$ref"
+            if [ ! -e "$target" ]; then
+              echo "::error file=$file::references missing local file '$ref'"
+              status=1
+            fi
+          done < <(
+            grep -roE '(href|src)="[^"#:]+\.(css|js|png|jpg|svg|pdf)"' --include='*.html' . \
+              | sed -E 's/"([^"]+)"$/\1/; s/(href|src)=//'
+          )
+          if [ "$status" -eq 0 ]; then echo "All local asset references resolve."; fi
+          exit "$status"

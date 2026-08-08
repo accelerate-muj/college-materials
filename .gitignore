@@ -1,0 +1,12 @@
+# Local tooling and scratch files
+.claude/
+*.local.*
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Editor directories
+.idea/
+.vscode/

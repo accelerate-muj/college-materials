@@ -1,0 +1,28 @@
+# Normalise line endings. Without this, a contributor on Windows commits CRLF
+# and the CI bash steps break in ways that are painful to diagnose, because the
+# failure only shows up on the Linux runner.
+* text=auto eol=lf
+
+# Windows-only files keep CRLF.
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# Binary: never touch.
+*.woff2 binary
+*.pdf  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+
+# Generated from data/ by build.js. Marking it linguist-generated keeps it out
+# of language stats and collapses it by default in PR diffs, where a
+# regenerated blob otherwise buries the actual change.
+pyq/data.js linguist-generated=true
+
+# Generated from the .woff2 files by build-fonts.js — 95KB of base64, which is
+# worse than useless to read in a diff.
+assets/fonts/fonts.css linguist-generated=true

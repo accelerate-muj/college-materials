@@ -1,0 +1,72 @@
+{
+  "_comment": [
+    "The shape of the PYQ archive: which years exist, and which branches ('sections')",
+    "each year is split into. Editing this file is how you add or rename a section —",
+    "the site, the validator and the build script all read it, so nothing else needs",
+    "to change. See data/pyq/README.md for the paper record format.",
+    "",
+    "Branch list sourced from the programmes offered by the Faculty of Science,",
+    "Technology and Architecture (FoSTA) at Manipal University Jaipur."
+  ],
+
+  "years": [
+    {
+      "id": "first-year",
+      "name": "First Year",
+      "ordinal": 1,
+      "semesters": [1, 2],
+      "branched": false,
+      "note": "The first-year B.Tech curriculum is common across every branch, so papers are filed in one shared collection rather than split by branch."
+    },
+    {
+      "id": "second-year",
+      "name": "Second Year",
+      "ordinal": 2,
+      "semesters": [3, 4],
+      "branched": true
+    },
+    {
+      "id": "third-year",
+      "name": "Third Year",
+      "ordinal": 3,
+      "semesters": [5, 6],
+      "branched": true
+    },
+    {
+      "id": "fourth-year",
+      "name": "Fourth Year",
+      "ordinal": 4,
+      "semesters": [7, 8],
+      "branched": true
+    }
+  ],
+
+  "branchGroups": [
+    { "id": "computing", "name": "Computing & IT" },
+    { "id": "engineering", "name": "Engineering" }
+  ],
+
+  "branches": [
+    { "id": "cse", "short": "CSE", "name": "Computer Science & Engineering", "group": "computing" },
+    { "id": "cse-aiml", "short": "CSE (AI & ML)", "name": "Computer Science & Engineering (Artificial Intelligence & Machine Learning)", "group": "computing" },
+    { "id": "cse-data-science", "short": "CSE (Data Science)", "name": "Computer Science & Engineering (Data Science)", "group": "computing" },
+    { "id": "cse-iot", "short": "CSE (IoT & IS)", "name": "Computer Science & Engineering (IoT & Intelligent Systems)", "group": "computing" },
+    { "id": "cse-cyber-security", "short": "CSE (Cyber Security)", "name": "Computer Science & Engineering (Cyber Security)", "group": "computing" },
+    { "id": "it", "short": "IT", "name": "Information Technology", "group": "computing" },
+    { "id": "cce", "short": "CCE", "name": "Computer & Communication Engineering", "group": "computing" },
+    { "id": "ece", "short": "ECE", "name": "Electronics & Communication Engineering", "group": "engineering" },
+    { "id": "ee", "short": "EE", "name": "Electrical Engineering", "group": "engineering" },
+    { "id": "me", "short": "ME", "name": "Mechanical Engineering", "group": "engineering" },
+    { "id": "ce", "short": "CE", "name": "Civil Engineering", "group": "engineering" },
+    { "id": "mechatronics", "short": "Mechatronics", "name": "Mechatronics Engineering", "group": "engineering" },
+    { "id": "biotech", "short": "Biotechnology", "name": "Biotechnology", "group": "engineering" },
+    { "id": "chemical", "short": "Chemical", "name": "Chemical Engineering", "group": "engineering" }
+  ],
+
+  "examTypes": [
+    { "id": "MTE", "name": "Mid-Term Examination" },
+    { "id": "ETE", "name": "End-Term Examination" },
+    { "id": "Quiz", "name": "Quiz / Class Test" },
+    { "id": "Makeup", "name": "Make-up Examination" }
+  ]
+}
