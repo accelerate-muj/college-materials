@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tests — college-materials</title>
+    <style>
+      body {
+        font: 16px/1.6 system-ui, sans-serif;
+        max-width: 60rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        color: #14181f;
+        background: #fff;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      #summary {
+        font-weight: 700;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+      }
+      #summary.pass {
+        background: #e6f4ea;
+        color: #14532d;
+      }
+      #summary.fail {
+        background: #fdecea;
+        color: #7f1d1d;
+      }
+      pre {
+        background: #f4f5f7;
+        padding: 1rem;
+        overflow-x: auto;
+        border-radius: 0.5rem;
+      }
+      li {
+        margin-bottom: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Test suite</h1>
+    <p>
+      The same tests CI runs. The Node equivalent is <code>node tests/run.js</code>; both load this
+      harness and these test files.
+    </p>
+
+    <p id="summary">Running…</p>
+    <ul id="failures"></ul>
+
+    <!-- Load order matters: harness and source first, then the tests that register against them. -->
+    <script src="harness.js"></script>
+    <script src="../src/pyq.js"></script>
+    <script src="pyq.test.js"></script>
+
+    <script>
+      (function () {
+        'use strict';
+
+        var result = window.TestHarness.run();
+        var summary = document.getElementById('summary');
+
+        summary.textContent =
+          result.passed + ' passed, ' + result.failed + ' failed, ' + result.total + ' total';
+        summary.className = result.failed === 0 ? 'pass' : 'fail';
+
+        var list = document.getElementById('failures');
+        result.failures.forEach(function (failure) {
+          var item = document.createElement('li');
+          var name = document.createElement('strong');
+          name.textContent = failure.name;
+          var detail = document.createElement('pre');
+          detail.textContent = failure.message;
+          item.appendChild(name);
+          item.appendChild(detail);
+          list.appendChild(item);
+        });
+      })();
+    </script>
+  </body>
+</html>

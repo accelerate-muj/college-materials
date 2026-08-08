@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Past Year Papers — Accelerate</title>
+    <meta
+      name="description"
+      content="Previous year question papers for Manipal University Jaipur, organised by year of study and branch."
+    />
+    <meta name="theme-color" content="#0a0a0a" />
+    <link rel="stylesheet" href="../assets/fonts/fonts.css" />
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <header class="site-header">
+      <div class="wrap">
+        <p class="site-title"><a href="../">Accelerate</a></p>
+        <nav class="site-nav" aria-label="Site">
+          <a href="./">pyq-archive</a>
+          <a href="https://github.com/accelerate-muj/college-materials">github</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main" class="wrap" tabindex="-1">
+      <!--
+        Rendered by app.js. The noscript block below is the archive in static
+        form — the papers are links, so the site must not become useless
+        without JavaScript.
+      -->
+      <div id="app">
+        <p class="prompt">find ./pyq -name "*.pdf"</p>
+        <h1>Past Year Papers</h1>
+        <p class="lede">Loading the archive…</p>
+      </div>
+
+      <noscript>
+        <p class="prompt">find ./pyq -name "*.pdf"</p>
+        <h1>Past Year Papers</h1>
+        <p class="lede">
+          This page uses JavaScript to render the archive. With JavaScript off, browse the papers
+          directly in the repository — they are plain JSON and PDF files.
+        </p>
+        <ul>
+          <li>
+            <a href="https://github.com/accelerate-muj/college-materials/tree/main/data/pyq/first-year"
+              >First Year papers</a
+            >
+          </li>
+          <li>
+            <a href="https://github.com/accelerate-muj/college-materials/tree/main/data/pyq/second-year"
+              >Second Year papers (by branch)</a
+            >
+          </li>
+          <li>
+            <a href="https://github.com/accelerate-muj/college-materials/tree/main/data/pyq/third-year"
+              >Third Year papers (by branch)</a
+            >
+          </li>
+          <li>
+            <a href="https://github.com/accelerate-muj/college-materials/tree/main/data/pyq/fourth-year"
+              >Fourth Year papers (by branch)</a
+            >
+          </li>
+        </ul>
+      </noscript>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <p>
+          Maintained by <a href="https://github.com/accelerate-muj">Accelerate</a>, the open-source
+          club at Manipal University Jaipur.
+        </p>
+        <p>
+          Missing a paper?
+          <a href="https://github.com/accelerate-muj/college-materials/blob/main/CONTRIBUTING.md"
+            >Add it</a
+          >
+          — it takes one JSON entry.
+        </p>
+        <p class="footer-command">git commit -m "add CS2001 MTE 2024"</p>
+      </div>
+    </footer>
+
+    <!-- Load order matters: rules, then baked data, then the view that uses both. -->
+    <script src="../src/pyq.js"></script>
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

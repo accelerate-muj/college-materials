@@ -1,0 +1,14 @@
+[
+  {
+    "id": "cse-2024-mte-cs2001",
+    "subject": "Data Structures and Algorithms",
+    "code": "CS2001",
+    "semester": 3,
+    "exam": "MTE",
+    "year": 2024,
+    "url": "https://example.org/papers/cs2001-mte-2024.pdf",
+    "pages": 2,
+    "contributor": "@octocat",
+    "notes": "Optional. Anything a reader should know before opening it."
+  }
+]
