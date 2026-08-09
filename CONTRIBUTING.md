@@ -37,16 +37,16 @@ and apply here too.
 ### 1. Find the right file
 
 ```
-data/pyq/<year>/<branch>.json
+data/pyq/<programme>/year-N/<specialisation>.json
 ```
 
-- **First year** is common to every branch: `data/pyq/first-year/common.json`
-- **Second, third and fourth year** split by branch: `data/pyq/second-year/cse.json`,
-  `data/pyq/third-year/ece.json`, and so on
+- **A specialisation of a branched year**: `data/pyq/btech/year-3/cse-aiml.json`
+- **A year that isn't split** files under `common`: `data/pyq/bba/year-2/common.json`
+- **B.Tech's first year** is common to every branch: `data/pyq/btech/year-1/common.json`
 
-The branch ids are the `id` values in [`data/pyq/catalogue.json`](data/pyq/catalogue.json). **If the
-file doesn't exist yet, create it** — most branches start empty. A new file's contents are just
-`[]` plus your entry.
+The programme and specialisation ids are the `id` values in
+[`data/pyq/catalogue.json`](data/pyq/catalogue.json). **If the file doesn't exist yet, create it** —
+most collections start empty. A new file's contents are just `[]` plus your entry.
 
 ### 2. Add your entry
 
@@ -100,30 +100,42 @@ The `-v` mount is the part that matters: without it the container can't see your
 **Prefer a link.** If the paper is already hosted somewhere stable, use `url` — it keeps the
 repository small and the takedown surface smaller.
 
-Commit the PDF only when there's no stable link. Put it under `papers/<year>/<branch>/` and
-reference it with `file` instead of `url`. CI checks that the file actually exists, so a `file`
-entry can never render as a dead link.
+Commit the PDF only when there's no stable link. Put it under
+`papers/<programme>/year-N/<specialisation>/` and reference it with `file` instead of `url`. CI
+checks that the file actually exists, so a `file` entry can never render as a dead link.
 
 Do not commit a paper you don't have the right to redistribute. See
 [the licensing note in the README](README.md#licensing-and-the-papers-themselves) — question papers
 belong to the University, and this archive exists on the understanding that it stays a study
 resource and honours takedown requests.
 
-## Adding or renaming a section
+## Adding a programme or a specialisation
 
-Sections (branches) live in one place:
-[`data/pyq/catalogue.json`](data/pyq/catalogue.json). Add an entry to `branches`:
+Both live in one place: [`data/pyq/catalogue.json`](data/pyq/catalogue.json).
+
+A missing programme goes in `programmes`:
 
 ```json
-{ "id": "cse-cloud", "short": "CSE (Cloud)", "name": "Computer Science & Engineering (Cloud Computing)", "group": "computing" }
+{ "id": "bpes", "short": "BPES", "name": "Bachelor of Physical Education & Sports", "group": "sport", "years": 3, "branches": [] }
 ```
 
-Then `node build.js` and commit. The site, the validator and the build all read that one list, so
+A missing specialisation goes in that programme's own `branches`:
+
+```json
+{ "id": "cse-cloud", "short": "CSE (Cloud)", "name": "Computer Science & Engineering (Cloud Computing)" }
+```
+
+Then `node build.js` and commit. The site, the validator and the build all read that one file, so
 there is nothing else to change — no new HTML page, no route to register.
 
-Renaming a branch id renames its data file too. Move
-`data/pyq/second-year/<old>.json` to `<new>.json` in the same commit, or CI will flag the old file
-as a collection the catalogue no longer defines.
+Renaming an id renames its data files too. Move
+`data/pyq/<programme>/year-N/<old>.json` to `<new>.json` in the same commit, or CI will flag the old
+file as a collection the catalogue no longer defines.
+
+**Got the real curriculum in front of you?** `data/pyq/subjects.json` maps each collection to the
+subjects taught in it, and it ships empty because inventing subject codes is worse than having
+none. Filling in even one programme's lists means every contributor for that programme picks a
+subject instead of typing it.
 
 ## Working on the site
 

@@ -11,15 +11,20 @@ somebody's Drive fills up.
 
 ### Past Year Question Papers
 
-Mid-term and end-term papers, organised the way you'd actually look for them — by year of study,
-then by branch.
+Mid-term and end-term papers, organised the way you'd actually look for them — programme, then
+year of study, then specialisation.
 
-| Year | Split by |
-|---|---|
-| First Year | Nothing — the first-year curriculum is common to every branch |
-| Second Year | Branch (14 sections: CSE, CSE specialisations, IT, CCE, ECE, EE, ME, CE, Mechatronics, Biotechnology, Chemical) |
-| Third Year | Branch, same list |
-| Fourth Year | Branch, same list |
+Every programme MUJ runs, not just B.Tech: BBA, BCA, B.Des, LLB, B.Arch, BHM, BPES and the rest —
+23 programmes across 10 faculties, 124 collections in total.
+
+| Level | Example | Notes |
+|---|---|---|
+| Programme | `btech`, `bba`, `bpes` | Grouped by faculty on the landing screen |
+| Year | `year-1` … `year-5` | Each programme runs to its own length; year N covers semesters 2N−1 and 2N |
+| Specialisation | `cse-aiml`, `fashion`, `common` | Only where the programme splits. B.Tech has 15; most programmes have none, and file under `common` |
+
+B.Tech's first year is common to every branch, so it files under `btech/year-1/common` rather than
+once per branch.
 
 **[Open the archive →](https://accelerate-muj.github.io/college-materials/pyq/)**
 
@@ -54,7 +59,7 @@ No Node? The test suite also runs by opening `tests/index.html` in a browser, an
 index.html               Landing page
 style.css                The design system, applied — see DESIGN.md
 pyq/
-  index.html             The archive: year -> branch -> papers
+  index.html             The archive: programme -> year -> specialisation -> papers
   app.js                 Hash routing and rendering
   data.js                Generated — the baked archive the page reads (window.PYQ_DATA)
   add/                   The scanner: camera, upload, PDF assembly, submission
@@ -63,9 +68,10 @@ src/
   pdf.js                 JPEG pages -> PDF, with no dependencies
   submission.js          The issue format, shared by the site and the bot
 data/pyq/                Source of truth — see data/pyq/README.md
-  catalogue.json         Years and branches. Editing this is how you add a section.
-  first-year/common.json
-  second-year/<branch>.json
+  catalogue.json         Programmes, durations, specialisations. Editing this is how you add one.
+  subjects.json          The subject picker's curated lists, keyed by collection
+  <programme>/year-N/<specialisation>.json
+  <programme>/year-N/common.json           where the year is not split
 papers/                  Committed PDFs, for papers not hosted anywhere stable
 assets/fonts/            Self-hosted faces (SIL OFL) + generated fonts.css
 build.js                 data/pyq/ -> pyq/data.js
@@ -123,8 +129,8 @@ flowchart TD
 
 The bot never merges. Every paper is read by a person before it reaches the site.
 
-By hand, the same thing is: add a record to `data/pyq/<year>/<branch>.json`, run `node build.js`,
-and open a pull request — the CI half of the diagram is identical.
+By hand, the same thing is: add a record to `data/pyq/<programme>/year-N/<specialisation>.json`, run
+`node build.js`, and open a pull request — the CI half of the diagram is identical.
 
 ## Enabling Pages
 

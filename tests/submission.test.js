@@ -17,12 +17,19 @@
   const assert = harness.assert;
 
   const CATALOGUE = {
-    years: [
-      { id: 'first-year', name: 'First Year', semesters: [1, 2], branched: false },
-      { id: 'second-year', name: 'Second Year', semesters: [3, 4], branched: true },
+    programmeGroups: [{ id: 'engineering', name: 'Engineering & Technology' }, { id: 'management', name: 'Management & Commerce' }],
+    programmes: [
+      {
+        id: 'btech', short: 'B.Tech', name: 'Bachelor of Technology', group: 'engineering',
+        years: 4, commonYears: [1],
+        branches: [
+          { id: 'cse', short: 'CSE', name: 'Computer Science & Engineering' },
+          { id: 'it', short: 'IT', name: 'Information Technology' },
+        ],
+      },
+      { id: 'bba', short: 'BBA', name: 'Bachelor of Business Administration', group: 'management', years: 3, branches: [] },
+      { id: 'barch', short: 'B.Arch', name: 'Bachelor of Architecture', group: 'engineering', years: 5, branches: [] },
     ],
-    branchGroups: [{ id: 'computing', name: 'Computing & IT' }],
-    branches: [{ id: 'cse', short: 'CSE', name: 'Computer Science & Engineering', group: 'computing' }],
     examTypes: [{ id: 'MTE', name: 'Mid-Term' }, { id: 'ETE', name: 'End-Term' }],
   };
 
@@ -31,8 +38,10 @@
   function submission(overrides) {
     return Object.assign(
       {
-        year: 'second-year',
+        programme: 'btech',
+        year: 2,
         branch: 'cse',
+        programmeName: 'Bachelor of Technology',
         yearName: 'Second Year',
         branchName: 'Computer Science & Engineering',
         paper: {
@@ -53,19 +62,29 @@
     it('reads back what it wrote', function () {
       const result = Submission.parseBody(Submission.buildBody(submission()), CONTEXT);
       assert.ok(result.ok, JSON.stringify(result.errors));
-      assert.equal(result.submission.year.id, 'second-year');
+      assert.equal(result.submission.programme.id, 'btech');
+      assert.equal(result.submission.year, 2);
       assert.equal(result.submission.branch.id, 'cse');
       assert.equal(result.submission.paper.code, 'CS2001');
     });
 
     it('round trips an unbranched year', function () {
-      const body = Submission.buildBody(submission({ year: 'first-year', branch: null, paper: {
+      const body = Submission.buildBody(submission({ year: 1, branch: null, paper: {
         id: 'fy-2024-mte-ph1001', subject: 'Engineering Physics', code: 'PH1001',
         semester: 1, exam: 'MTE', year: 2024,
       } }));
       const result = Submission.parseBody(body, CONTEXT);
       assert.ok(result.ok, JSON.stringify(result.errors));
       assert.equal(result.submission.branch, null);
+    });
+
+    it('round trips a programme that has no specialisations at all', function () {
+      const body = Submission.buildBody(submission({ programme: 'bba', year: 2, branch: null, paper: {
+        id: 'bba-2024-mte-mg2001', subject: 'Marketing Management', code: 'MG2001', exam: 'MTE', year: 2024,
+      } }));
+      const result = Submission.parseBody(body, CONTEXT);
+      assert.ok(result.ok, JSON.stringify(result.errors));
+      assert.equal(result.submission.programme.id, 'bba');
     });
 
     it('tells a human what the paper is without reading the JSON', function () {
@@ -98,11 +117,18 @@
       assert.ok(result.errors[0].indexOf('not valid JSON') !== -1);
     });
 
-    it('rejects an unknown year', function () {
-      const body = Submission.buildBody(submission({ year: 'fifth-year' }));
+    it('rejects an unknown programme', function () {
+      const body = Submission.buildBody(submission({ programme: 'wizardry' }));
       const result = Submission.parseBody(body, CONTEXT);
       assert.ok(!result.ok);
-      assert.ok(result.errors.join(' ').indexOf('fifth-year') !== -1);
+      assert.ok(result.errors.join(' ').indexOf('wizardry') !== -1);
+    });
+
+    it('rejects a year the programme does not run to', function () {
+      const body = Submission.buildBody(submission({ programme: 'bba', year: 4, branch: null }));
+      const result = Submission.parseBody(body, CONTEXT);
+      assert.ok(!result.ok);
+      assert.ok(result.errors.join(' ').indexOf('runs 3 years') !== -1, result.errors.join('; '));
     });
 
     it('rejects an unknown branch', function () {
@@ -113,10 +139,10 @@
     });
 
     it('rejects a branch on a year that has none', function () {
-      const body = Submission.buildBody(submission({ year: 'first-year', branch: 'cse' }));
+      const body = Submission.buildBody(submission({ year: 1, branch: 'cse' }));
       const result = Submission.parseBody(body, CONTEXT);
       assert.ok(!result.ok);
-      assert.ok(result.errors.join(' ').indexOf('common to every branch') !== -1);
+      assert.ok(result.errors.join(' ').indexOf('not split by specialisation') !== -1, result.errors.join('; '));
     });
 
     /*
@@ -143,13 +169,13 @@
 
     it('applies the ordinary paper rules', function () {
       const body = Submission.buildBody(
-        submission({ paper: Object.assign(submission().paper, { exam: 'Viva', semester: 7 }) })
+        submission({ paper: Object.assign(submission().paper, { exam: 'Viva', semester: 9 }) })
       );
       const result = Submission.parseBody(body, CONTEXT);
       assert.ok(!result.ok);
       const joined = result.errors.join(' ');
       assert.ok(joined.indexOf('Viva') !== -1, joined);
-      assert.ok(joined.indexOf('semester 7') !== -1, joined);
+      assert.ok(joined.indexOf('semester 9') !== -1, joined);
     });
   });
 
@@ -200,20 +226,20 @@
     const parsed = Submission.parseBody(Submission.buildBody(submission()), CONTEXT).submission;
 
     it('derives the path from validated ids', function () {
-      assert.equal(Submission.filePath(parsed), 'papers/second-year/cse/cse-2024-mte-cs2001.pdf');
+      assert.equal(Submission.filePath(parsed), 'papers/btech/year-2/cse/cse-2024-mte-cs2001.pdf');
     });
 
     it('drops the branch segment for an unbranched year', function () {
-      const body = Submission.buildBody(submission({ year: 'first-year', branch: null, paper: {
+      const body = Submission.buildBody(submission({ year: 1, branch: null, paper: {
         id: 'fy-2024-mte-ph1001', subject: 'Physics', exam: 'MTE', year: 2024,
       } }));
       const first = Submission.parseBody(body, CONTEXT).submission;
-      assert.equal(Submission.filePath(first), 'papers/first-year/fy-2024-mte-ph1001.pdf');
+      assert.equal(Submission.filePath(first), 'papers/btech/year-1/fy-2024-mte-ph1001.pdf');
     });
 
     it('strips anything that could escape the directory', function () {
-      const hostile = { year: { id: 'second-year' }, branch: { id: 'cse' }, paper: { id: '../../etc/passwd' } };
-      assert.equal(Submission.filePath(hostile), 'papers/second-year/cse/etcpasswd.pdf');
+      const hostile = { programme: { id: '../btech' }, year: 2, branch: { id: 'cse' }, paper: { id: '../../etc/passwd' } };
+      assert.equal(Submission.filePath(hostile), 'papers/btech/year-2/cse/etcpasswd.pdf');
     });
 
     it('names the branch after the paper, safely', function () {

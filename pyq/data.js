@@ -4,151 +4,366 @@
 window.PYQ_DATA = {
   "catalogue": {
     "_comment": [
-      "The shape of the PYQ archive: which years exist, and which branches ('sections')",
-      "each year is split into. Editing this file is how you add or rename a section —",
-      "the site, the validator and the build script all read it, so nothing else needs",
-      "to change. See data/pyq/README.md for the paper record format.",
+      "The shape of the PYQ archive: which programmes exist, how long each runs,",
+      "and which specialisations each is split into.",
       "",
-      "Branch list sourced from the programmes offered by the Faculty of Science,",
-      "Technology and Architecture (FoSTA) at Manipal University Jaipur."
+      "Editing this file is how you add or rename anything — the site, the build",
+      "script, the validator and the scanner all derive from it, so a programme",
+      "cannot exist in the navigation but not the validator.",
+      "",
+      "## Shape",
+      "",
+      "A collection of papers is identified by <programme>/<year-N>/<branch>, or",
+      "<programme>/<year-N>/common where that year is not split. Semesters are",
+      "derived (year N covers semesters 2N-1 and 2N), not listed.",
+      "",
+      "  years        how many years the programme runs",
+      "  branches     the specialisations; an empty list means it is not split",
+      "  commonYears  years that are NOT split even though branches exist. B.Tech",
+      "               has a common first year; most programmes do not.",
+      "",
+      "## Accuracy",
+      "",
+      "Programme names and groupings come from MUJ's published programme list.",
+      "Durations are the standard length of each degree; a couple are worth",
+      "confirming against the current regulations before anyone relies on them,",
+      "and they are marked `\"check\": true` below. Getting one wrong only adds or",
+      "omits a year bucket, and fixing it is a one-line edit here."
     ],
-    "years": [
-      {
-        "id": "first-year",
-        "name": "First Year",
-        "ordinal": 1,
-        "semesters": [
-          1,
-          2
-        ],
-        "branched": false,
-        "note": "The first-year B.Tech curriculum is common across every branch, so papers are filed in one shared collection rather than split by branch."
-      },
-      {
-        "id": "second-year",
-        "name": "Second Year",
-        "ordinal": 2,
-        "semesters": [
-          3,
-          4
-        ],
-        "branched": true
-      },
-      {
-        "id": "third-year",
-        "name": "Third Year",
-        "ordinal": 3,
-        "semesters": [
-          5,
-          6
-        ],
-        "branched": true
-      },
-      {
-        "id": "fourth-year",
-        "name": "Fourth Year",
-        "ordinal": 4,
-        "semesters": [
-          7,
-          8
-        ],
-        "branched": true
-      }
-    ],
-    "branchGroups": [
-      {
-        "id": "computing",
-        "name": "Computing & IT"
-      },
+    "programmeGroups": [
       {
         "id": "engineering",
-        "name": "Engineering"
+        "name": "Engineering & Technology"
+      },
+      {
+        "id": "computing",
+        "name": "Computer Applications"
+      },
+      {
+        "id": "management",
+        "name": "Management & Commerce"
+      },
+      {
+        "id": "design",
+        "name": "Design & Media"
+      },
+      {
+        "id": "science",
+        "name": "Science"
+      },
+      {
+        "id": "arts",
+        "name": "Arts & Humanities"
+      },
+      {
+        "id": "law",
+        "name": "Law"
+      },
+      {
+        "id": "architecture",
+        "name": "Architecture & Planning"
+      },
+      {
+        "id": "hospitality",
+        "name": "Hospitality"
+      },
+      {
+        "id": "sport",
+        "name": "Physical Education"
       }
     ],
-    "branches": [
+    "programmes": [
       {
-        "id": "cse",
-        "short": "CSE",
-        "name": "Computer Science & Engineering",
-        "group": "computing"
+        "id": "btech",
+        "short": "B.Tech",
+        "name": "Bachelor of Technology",
+        "group": "engineering",
+        "years": 4,
+        "commonYears": [
+          1
+        ],
+        "note": "The first year is common to every branch, so its papers are filed together.",
+        "branches": [
+          {
+            "id": "cse",
+            "short": "CSE",
+            "name": "Computer Science & Engineering"
+          },
+          {
+            "id": "cse-aiml",
+            "short": "CSE (AI & ML)",
+            "name": "Computer Science & Engineering (Artificial Intelligence & Machine Learning)"
+          },
+          {
+            "id": "cse-data-science",
+            "short": "CSE (Data Science)",
+            "name": "Computer Science & Engineering (Data Science)"
+          },
+          {
+            "id": "cse-iot",
+            "short": "CSE (IoT & IS)",
+            "name": "Computer Science & Engineering (IoT & Intelligent Systems)"
+          },
+          {
+            "id": "cse-cyber-security",
+            "short": "CSE (Cyber Security)",
+            "name": "Computer Science & Engineering (Cyber Security)"
+          },
+          {
+            "id": "it",
+            "short": "IT",
+            "name": "Information Technology"
+          },
+          {
+            "id": "cce",
+            "short": "CCE",
+            "name": "Computer & Communication Engineering"
+          },
+          {
+            "id": "ece",
+            "short": "ECE",
+            "name": "Electronics & Communication Engineering"
+          },
+          {
+            "id": "ee",
+            "short": "EE",
+            "name": "Electrical Engineering"
+          },
+          {
+            "id": "me",
+            "short": "ME",
+            "name": "Mechanical Engineering"
+          },
+          {
+            "id": "ce",
+            "short": "CE",
+            "name": "Civil Engineering"
+          },
+          {
+            "id": "mechatronics",
+            "short": "Mechatronics",
+            "name": "Mechatronics Engineering"
+          },
+          {
+            "id": "automobile",
+            "short": "Automobile",
+            "name": "Automobile Engineering"
+          },
+          {
+            "id": "biotech",
+            "short": "Biotechnology",
+            "name": "Biotechnology"
+          },
+          {
+            "id": "chemical",
+            "short": "Chemical",
+            "name": "Chemical Engineering"
+          }
+        ]
       },
       {
-        "id": "cse-aiml",
-        "short": "CSE (AI & ML)",
-        "name": "Computer Science & Engineering (Artificial Intelligence & Machine Learning)",
-        "group": "computing"
+        "id": "mtech",
+        "short": "M.Tech",
+        "name": "Master of Technology",
+        "group": "engineering",
+        "years": 2,
+        "branches": []
       },
       {
-        "id": "cse-data-science",
-        "short": "CSE (Data Science)",
-        "name": "Computer Science & Engineering (Data Science)",
-        "group": "computing"
+        "id": "bca",
+        "short": "BCA",
+        "name": "Bachelor of Computer Applications",
+        "group": "computing",
+        "years": 3,
+        "branches": []
       },
       {
-        "id": "cse-iot",
-        "short": "CSE (IoT & IS)",
-        "name": "Computer Science & Engineering (IoT & Intelligent Systems)",
-        "group": "computing"
+        "id": "mca",
+        "short": "MCA",
+        "name": "Master of Computer Applications",
+        "group": "computing",
+        "years": 2,
+        "branches": []
       },
       {
-        "id": "cse-cyber-security",
-        "short": "CSE (Cyber Security)",
-        "name": "Computer Science & Engineering (Cyber Security)",
-        "group": "computing"
+        "id": "bba",
+        "short": "BBA",
+        "name": "Bachelor of Business Administration",
+        "group": "management",
+        "years": 3,
+        "branches": []
       },
       {
-        "id": "it",
-        "short": "IT",
-        "name": "Information Technology",
-        "group": "computing"
+        "id": "mba",
+        "short": "MBA",
+        "name": "Master of Business Administration",
+        "group": "management",
+        "years": 2,
+        "branches": []
       },
       {
-        "id": "cce",
-        "short": "CCE",
-        "name": "Computer & Communication Engineering",
-        "group": "computing"
+        "id": "bcom",
+        "short": "B.Com",
+        "name": "Bachelor of Commerce",
+        "group": "management",
+        "years": 3,
+        "branches": []
       },
       {
-        "id": "ece",
-        "short": "ECE",
-        "name": "Electronics & Communication Engineering",
-        "group": "engineering"
+        "id": "mcom",
+        "short": "M.Com",
+        "name": "Master of Commerce",
+        "group": "management",
+        "years": 2,
+        "branches": []
       },
       {
-        "id": "ee",
-        "short": "EE",
-        "name": "Electrical Engineering",
-        "group": "engineering"
+        "id": "bdes",
+        "short": "B.Des",
+        "name": "Bachelor of Design",
+        "group": "design",
+        "years": 4,
+        "branches": [
+          {
+            "id": "fashion",
+            "short": "Fashion Design",
+            "name": "Fashion Design"
+          },
+          {
+            "id": "interior",
+            "short": "Interior Design",
+            "name": "Interior Design"
+          },
+          {
+            "id": "ux",
+            "short": "UX & Interaction",
+            "name": "User Experience & Interaction Design"
+          },
+          {
+            "id": "communication",
+            "short": "Communication Design",
+            "name": "Communication Design"
+          }
+        ]
       },
       {
-        "id": "me",
-        "short": "ME",
-        "name": "Mechanical Engineering",
-        "group": "engineering"
+        "id": "bfa",
+        "short": "BFA",
+        "name": "Bachelor of Fine Arts",
+        "group": "design",
+        "years": 4,
+        "check": true,
+        "branches": []
       },
       {
-        "id": "ce",
-        "short": "CE",
-        "name": "Civil Engineering",
-        "group": "engineering"
+        "id": "ba-jmc",
+        "short": "BA J&MC",
+        "name": "BA Journalism & Mass Communication",
+        "group": "design",
+        "years": 3,
+        "branches": []
       },
       {
-        "id": "mechatronics",
-        "short": "Mechatronics",
-        "name": "Mechatronics Engineering",
-        "group": "engineering"
+        "id": "ma-jmc",
+        "short": "MA J&MC",
+        "name": "MA Journalism & Mass Communication",
+        "group": "design",
+        "years": 2,
+        "branches": []
       },
       {
-        "id": "biotech",
-        "short": "Biotechnology",
-        "name": "Biotechnology",
-        "group": "engineering"
+        "id": "bsc",
+        "short": "B.Sc (Hons)",
+        "name": "Bachelor of Science (Honours)",
+        "group": "science",
+        "years": 3,
+        "check": true,
+        "note": "Three years, or four with the honours-with-research year.",
+        "branches": []
       },
       {
-        "id": "chemical",
-        "short": "Chemical",
-        "name": "Chemical Engineering",
-        "group": "engineering"
+        "id": "msc",
+        "short": "M.Sc",
+        "name": "Master of Science",
+        "group": "science",
+        "years": 2,
+        "branches": []
+      },
+      {
+        "id": "ba",
+        "short": "BA (Hons)",
+        "name": "Bachelor of Arts (Honours)",
+        "group": "arts",
+        "years": 3,
+        "check": true,
+        "branches": []
+      },
+      {
+        "id": "ba-llb",
+        "short": "BA LLB (Hons)",
+        "name": "BA LLB (Honours)",
+        "group": "law",
+        "years": 5,
+        "branches": []
+      },
+      {
+        "id": "bba-llb",
+        "short": "BBA LLB (Hons)",
+        "name": "BBA LLB (Honours)",
+        "group": "law",
+        "years": 5,
+        "branches": []
+      },
+      {
+        "id": "llb",
+        "short": "LLB",
+        "name": "Bachelor of Laws",
+        "group": "law",
+        "years": 3,
+        "branches": []
+      },
+      {
+        "id": "llm",
+        "short": "LLM",
+        "name": "Master of Laws",
+        "group": "law",
+        "years": 1,
+        "check": true,
+        "branches": []
+      },
+      {
+        "id": "barch",
+        "short": "B.Arch",
+        "name": "Bachelor of Architecture",
+        "group": "architecture",
+        "years": 5,
+        "branches": []
+      },
+      {
+        "id": "march",
+        "short": "M.Arch",
+        "name": "Master of Architecture",
+        "group": "architecture",
+        "years": 2,
+        "branches": []
+      },
+      {
+        "id": "bhm",
+        "short": "BHM",
+        "name": "Bachelor of Hotel Management",
+        "group": "hospitality",
+        "years": 4,
+        "check": true,
+        "branches": []
+      },
+      {
+        "id": "bpes",
+        "short": "BPES",
+        "name": "Bachelor of Physical Education & Sports",
+        "group": "sport",
+        "years": 3,
+        "check": true,
+        "branches": []
       }
     ],
     "examTypes": [
@@ -171,93 +386,255 @@ window.PYQ_DATA = {
     ]
   },
   "collections": {
-    "first-year/common": [],
-    "second-year/cse": [],
-    "second-year/cse-aiml": [],
-    "second-year/cse-data-science": [],
-    "second-year/cse-iot": [],
-    "second-year/cse-cyber-security": [],
-    "second-year/it": [],
-    "second-year/cce": [],
-    "second-year/ece": [],
-    "second-year/ee": [],
-    "second-year/me": [],
-    "second-year/ce": [],
-    "second-year/mechatronics": [],
-    "second-year/biotech": [],
-    "second-year/chemical": [],
-    "third-year/cse": [],
-    "third-year/cse-aiml": [],
-    "third-year/cse-data-science": [],
-    "third-year/cse-iot": [],
-    "third-year/cse-cyber-security": [],
-    "third-year/it": [],
-    "third-year/cce": [],
-    "third-year/ece": [],
-    "third-year/ee": [],
-    "third-year/me": [],
-    "third-year/ce": [],
-    "third-year/mechatronics": [],
-    "third-year/biotech": [],
-    "third-year/chemical": [],
-    "fourth-year/cse": [],
-    "fourth-year/cse-aiml": [],
-    "fourth-year/cse-data-science": [],
-    "fourth-year/cse-iot": [],
-    "fourth-year/cse-cyber-security": [],
-    "fourth-year/it": [],
-    "fourth-year/cce": [],
-    "fourth-year/ece": [],
-    "fourth-year/ee": [],
-    "fourth-year/me": [],
-    "fourth-year/ce": [],
-    "fourth-year/mechatronics": [],
-    "fourth-year/biotech": [],
-    "fourth-year/chemical": []
+    "btech/year-1/common": [],
+    "btech/year-2/cse": [],
+    "btech/year-2/cse-aiml": [],
+    "btech/year-2/cse-data-science": [],
+    "btech/year-2/cse-iot": [],
+    "btech/year-2/cse-cyber-security": [],
+    "btech/year-2/it": [],
+    "btech/year-2/cce": [],
+    "btech/year-2/ece": [],
+    "btech/year-2/ee": [],
+    "btech/year-2/me": [],
+    "btech/year-2/ce": [],
+    "btech/year-2/mechatronics": [],
+    "btech/year-2/automobile": [],
+    "btech/year-2/biotech": [],
+    "btech/year-2/chemical": [],
+    "btech/year-3/cse": [],
+    "btech/year-3/cse-aiml": [],
+    "btech/year-3/cse-data-science": [],
+    "btech/year-3/cse-iot": [],
+    "btech/year-3/cse-cyber-security": [],
+    "btech/year-3/it": [],
+    "btech/year-3/cce": [],
+    "btech/year-3/ece": [],
+    "btech/year-3/ee": [],
+    "btech/year-3/me": [],
+    "btech/year-3/ce": [],
+    "btech/year-3/mechatronics": [],
+    "btech/year-3/automobile": [],
+    "btech/year-3/biotech": [],
+    "btech/year-3/chemical": [],
+    "btech/year-4/cse": [],
+    "btech/year-4/cse-aiml": [],
+    "btech/year-4/cse-data-science": [],
+    "btech/year-4/cse-iot": [],
+    "btech/year-4/cse-cyber-security": [],
+    "btech/year-4/it": [],
+    "btech/year-4/cce": [],
+    "btech/year-4/ece": [],
+    "btech/year-4/ee": [],
+    "btech/year-4/me": [],
+    "btech/year-4/ce": [],
+    "btech/year-4/mechatronics": [],
+    "btech/year-4/automobile": [],
+    "btech/year-4/biotech": [],
+    "btech/year-4/chemical": [],
+    "mtech/year-1/common": [],
+    "mtech/year-2/common": [],
+    "bca/year-1/common": [],
+    "bca/year-2/common": [],
+    "bca/year-3/common": [],
+    "mca/year-1/common": [],
+    "mca/year-2/common": [],
+    "bba/year-1/common": [],
+    "bba/year-2/common": [],
+    "bba/year-3/common": [],
+    "mba/year-1/common": [],
+    "mba/year-2/common": [],
+    "bcom/year-1/common": [],
+    "bcom/year-2/common": [],
+    "bcom/year-3/common": [],
+    "mcom/year-1/common": [],
+    "mcom/year-2/common": [],
+    "bdes/year-1/fashion": [],
+    "bdes/year-1/interior": [],
+    "bdes/year-1/ux": [],
+    "bdes/year-1/communication": [],
+    "bdes/year-2/fashion": [],
+    "bdes/year-2/interior": [],
+    "bdes/year-2/ux": [],
+    "bdes/year-2/communication": [],
+    "bdes/year-3/fashion": [],
+    "bdes/year-3/interior": [],
+    "bdes/year-3/ux": [],
+    "bdes/year-3/communication": [],
+    "bdes/year-4/fashion": [],
+    "bdes/year-4/interior": [],
+    "bdes/year-4/ux": [],
+    "bdes/year-4/communication": [],
+    "bfa/year-1/common": [],
+    "bfa/year-2/common": [],
+    "bfa/year-3/common": [],
+    "bfa/year-4/common": [],
+    "ba-jmc/year-1/common": [],
+    "ba-jmc/year-2/common": [],
+    "ba-jmc/year-3/common": [],
+    "ma-jmc/year-1/common": [],
+    "ma-jmc/year-2/common": [],
+    "bsc/year-1/common": [],
+    "bsc/year-2/common": [],
+    "bsc/year-3/common": [],
+    "msc/year-1/common": [],
+    "msc/year-2/common": [],
+    "ba/year-1/common": [],
+    "ba/year-2/common": [],
+    "ba/year-3/common": [],
+    "ba-llb/year-1/common": [],
+    "ba-llb/year-2/common": [],
+    "ba-llb/year-3/common": [],
+    "ba-llb/year-4/common": [],
+    "ba-llb/year-5/common": [],
+    "bba-llb/year-1/common": [],
+    "bba-llb/year-2/common": [],
+    "bba-llb/year-3/common": [],
+    "bba-llb/year-4/common": [],
+    "bba-llb/year-5/common": [],
+    "llb/year-1/common": [],
+    "llb/year-2/common": [],
+    "llb/year-3/common": [],
+    "llm/year-1/common": [],
+    "barch/year-1/common": [],
+    "barch/year-2/common": [],
+    "barch/year-3/common": [],
+    "barch/year-4/common": [],
+    "barch/year-5/common": [],
+    "march/year-1/common": [],
+    "march/year-2/common": [],
+    "bhm/year-1/common": [],
+    "bhm/year-2/common": [],
+    "bhm/year-3/common": [],
+    "bhm/year-4/common": [],
+    "bpes/year-1/common": [],
+    "bpes/year-2/common": [],
+    "bpes/year-3/common": []
   },
   "subjects": {
-    "first-year/common": [],
-    "second-year/cse": [],
-    "second-year/cse-aiml": [],
-    "second-year/cse-data-science": [],
-    "second-year/cse-iot": [],
-    "second-year/cse-cyber-security": [],
-    "second-year/it": [],
-    "second-year/cce": [],
-    "second-year/ece": [],
-    "second-year/ee": [],
-    "second-year/me": [],
-    "second-year/ce": [],
-    "second-year/mechatronics": [],
-    "second-year/biotech": [],
-    "second-year/chemical": [],
-    "third-year/cse": [],
-    "third-year/cse-aiml": [],
-    "third-year/cse-data-science": [],
-    "third-year/cse-iot": [],
-    "third-year/cse-cyber-security": [],
-    "third-year/it": [],
-    "third-year/cce": [],
-    "third-year/ece": [],
-    "third-year/ee": [],
-    "third-year/me": [],
-    "third-year/ce": [],
-    "third-year/mechatronics": [],
-    "third-year/biotech": [],
-    "third-year/chemical": [],
-    "fourth-year/cse": [],
-    "fourth-year/cse-aiml": [],
-    "fourth-year/cse-data-science": [],
-    "fourth-year/cse-iot": [],
-    "fourth-year/cse-cyber-security": [],
-    "fourth-year/it": [],
-    "fourth-year/cce": [],
-    "fourth-year/ece": [],
-    "fourth-year/ee": [],
-    "fourth-year/me": [],
-    "fourth-year/ce": [],
-    "fourth-year/mechatronics": [],
-    "fourth-year/biotech": [],
-    "fourth-year/chemical": []
+    "btech/year-1/common": [],
+    "btech/year-2/cse": [],
+    "btech/year-2/cse-aiml": [],
+    "btech/year-2/cse-data-science": [],
+    "btech/year-2/cse-iot": [],
+    "btech/year-2/cse-cyber-security": [],
+    "btech/year-2/it": [],
+    "btech/year-2/cce": [],
+    "btech/year-2/ece": [],
+    "btech/year-2/ee": [],
+    "btech/year-2/me": [],
+    "btech/year-2/ce": [],
+    "btech/year-2/mechatronics": [],
+    "btech/year-2/automobile": [],
+    "btech/year-2/biotech": [],
+    "btech/year-2/chemical": [],
+    "btech/year-3/cse": [],
+    "btech/year-3/cse-aiml": [],
+    "btech/year-3/cse-data-science": [],
+    "btech/year-3/cse-iot": [],
+    "btech/year-3/cse-cyber-security": [],
+    "btech/year-3/it": [],
+    "btech/year-3/cce": [],
+    "btech/year-3/ece": [],
+    "btech/year-3/ee": [],
+    "btech/year-3/me": [],
+    "btech/year-3/ce": [],
+    "btech/year-3/mechatronics": [],
+    "btech/year-3/automobile": [],
+    "btech/year-3/biotech": [],
+    "btech/year-3/chemical": [],
+    "btech/year-4/cse": [],
+    "btech/year-4/cse-aiml": [],
+    "btech/year-4/cse-data-science": [],
+    "btech/year-4/cse-iot": [],
+    "btech/year-4/cse-cyber-security": [],
+    "btech/year-4/it": [],
+    "btech/year-4/cce": [],
+    "btech/year-4/ece": [],
+    "btech/year-4/ee": [],
+    "btech/year-4/me": [],
+    "btech/year-4/ce": [],
+    "btech/year-4/mechatronics": [],
+    "btech/year-4/automobile": [],
+    "btech/year-4/biotech": [],
+    "btech/year-4/chemical": [],
+    "mtech/year-1/common": [],
+    "mtech/year-2/common": [],
+    "bca/year-1/common": [],
+    "bca/year-2/common": [],
+    "bca/year-3/common": [],
+    "mca/year-1/common": [],
+    "mca/year-2/common": [],
+    "bba/year-1/common": [],
+    "bba/year-2/common": [],
+    "bba/year-3/common": [],
+    "mba/year-1/common": [],
+    "mba/year-2/common": [],
+    "bcom/year-1/common": [],
+    "bcom/year-2/common": [],
+    "bcom/year-3/common": [],
+    "mcom/year-1/common": [],
+    "mcom/year-2/common": [],
+    "bdes/year-1/fashion": [],
+    "bdes/year-1/interior": [],
+    "bdes/year-1/ux": [],
+    "bdes/year-1/communication": [],
+    "bdes/year-2/fashion": [],
+    "bdes/year-2/interior": [],
+    "bdes/year-2/ux": [],
+    "bdes/year-2/communication": [],
+    "bdes/year-3/fashion": [],
+    "bdes/year-3/interior": [],
+    "bdes/year-3/ux": [],
+    "bdes/year-3/communication": [],
+    "bdes/year-4/fashion": [],
+    "bdes/year-4/interior": [],
+    "bdes/year-4/ux": [],
+    "bdes/year-4/communication": [],
+    "bfa/year-1/common": [],
+    "bfa/year-2/common": [],
+    "bfa/year-3/common": [],
+    "bfa/year-4/common": [],
+    "ba-jmc/year-1/common": [],
+    "ba-jmc/year-2/common": [],
+    "ba-jmc/year-3/common": [],
+    "ma-jmc/year-1/common": [],
+    "ma-jmc/year-2/common": [],
+    "bsc/year-1/common": [],
+    "bsc/year-2/common": [],
+    "bsc/year-3/common": [],
+    "msc/year-1/common": [],
+    "msc/year-2/common": [],
+    "ba/year-1/common": [],
+    "ba/year-2/common": [],
+    "ba/year-3/common": [],
+    "ba-llb/year-1/common": [],
+    "ba-llb/year-2/common": [],
+    "ba-llb/year-3/common": [],
+    "ba-llb/year-4/common": [],
+    "ba-llb/year-5/common": [],
+    "bba-llb/year-1/common": [],
+    "bba-llb/year-2/common": [],
+    "bba-llb/year-3/common": [],
+    "bba-llb/year-4/common": [],
+    "bba-llb/year-5/common": [],
+    "llb/year-1/common": [],
+    "llb/year-2/common": [],
+    "llb/year-3/common": [],
+    "llm/year-1/common": [],
+    "barch/year-1/common": [],
+    "barch/year-2/common": [],
+    "barch/year-3/common": [],
+    "barch/year-4/common": [],
+    "barch/year-5/common": [],
+    "march/year-1/common": [],
+    "march/year-2/common": [],
+    "bhm/year-1/common": [],
+    "bhm/year-2/common": [],
+    "bhm/year-3/common": [],
+    "bhm/year-4/common": [],
+    "bpes/year-1/common": [],
+    "bpes/year-2/common": [],
+    "bpes/year-3/common": []
   }
 };

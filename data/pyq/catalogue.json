@@ -1,66 +1,269 @@
 {
   "_comment": [
-    "The shape of the PYQ archive: which years exist, and which branches ('sections')",
-    "each year is split into. Editing this file is how you add or rename a section —",
-    "the site, the validator and the build script all read it, so nothing else needs",
-    "to change. See data/pyq/README.md for the paper record format.",
+    "The shape of the PYQ archive: which programmes exist, how long each runs,",
+    "and which specialisations each is split into.",
     "",
-    "Branch list sourced from the programmes offered by the Faculty of Science,",
-    "Technology and Architecture (FoSTA) at Manipal University Jaipur."
+    "Editing this file is how you add or rename anything — the site, the build",
+    "script, the validator and the scanner all derive from it, so a programme",
+    "cannot exist in the navigation but not the validator.",
+    "",
+    "## Shape",
+    "",
+    "A collection of papers is identified by <programme>/<year-N>/<branch>, or",
+    "<programme>/<year-N>/common where that year is not split. Semesters are",
+    "derived (year N covers semesters 2N-1 and 2N), not listed.",
+    "",
+    "  years        how many years the programme runs",
+    "  branches     the specialisations; an empty list means it is not split",
+    "  commonYears  years that are NOT split even though branches exist. B.Tech",
+    "               has a common first year; most programmes do not.",
+    "",
+    "## Accuracy",
+    "",
+    "Programme names and groupings come from MUJ's published programme list.",
+    "Durations are the standard length of each degree; a couple are worth",
+    "confirming against the current regulations before anyone relies on them,",
+    "and they are marked `\"check\": true` below. Getting one wrong only adds or",
+    "omits a year bucket, and fixing it is a one-line edit here."
   ],
 
-  "years": [
+  "programmeGroups": [
+    { "id": "engineering", "name": "Engineering & Technology" },
+    { "id": "computing", "name": "Computer Applications" },
+    { "id": "management", "name": "Management & Commerce" },
+    { "id": "design", "name": "Design & Media" },
+    { "id": "science", "name": "Science" },
+    { "id": "arts", "name": "Arts & Humanities" },
+    { "id": "law", "name": "Law" },
+    { "id": "architecture", "name": "Architecture & Planning" },
+    { "id": "hospitality", "name": "Hospitality" },
+    { "id": "sport", "name": "Physical Education" }
+  ],
+
+  "programmes": [
     {
-      "id": "first-year",
-      "name": "First Year",
-      "ordinal": 1,
-      "semesters": [1, 2],
-      "branched": false,
-      "note": "The first-year B.Tech curriculum is common across every branch, so papers are filed in one shared collection rather than split by branch."
+      "id": "btech",
+      "short": "B.Tech",
+      "name": "Bachelor of Technology",
+      "group": "engineering",
+      "years": 4,
+      "commonYears": [1],
+      "note": "The first year is common to every branch, so its papers are filed together.",
+      "branches": [
+        { "id": "cse", "short": "CSE", "name": "Computer Science & Engineering" },
+        { "id": "cse-aiml", "short": "CSE (AI & ML)", "name": "Computer Science & Engineering (Artificial Intelligence & Machine Learning)" },
+        { "id": "cse-data-science", "short": "CSE (Data Science)", "name": "Computer Science & Engineering (Data Science)" },
+        { "id": "cse-iot", "short": "CSE (IoT & IS)", "name": "Computer Science & Engineering (IoT & Intelligent Systems)" },
+        { "id": "cse-cyber-security", "short": "CSE (Cyber Security)", "name": "Computer Science & Engineering (Cyber Security)" },
+        { "id": "it", "short": "IT", "name": "Information Technology" },
+        { "id": "cce", "short": "CCE", "name": "Computer & Communication Engineering" },
+        { "id": "ece", "short": "ECE", "name": "Electronics & Communication Engineering" },
+        { "id": "ee", "short": "EE", "name": "Electrical Engineering" },
+        { "id": "me", "short": "ME", "name": "Mechanical Engineering" },
+        { "id": "ce", "short": "CE", "name": "Civil Engineering" },
+        { "id": "mechatronics", "short": "Mechatronics", "name": "Mechatronics Engineering" },
+        { "id": "automobile", "short": "Automobile", "name": "Automobile Engineering" },
+        { "id": "biotech", "short": "Biotechnology", "name": "Biotechnology" },
+        { "id": "chemical", "short": "Chemical", "name": "Chemical Engineering" }
+      ]
     },
     {
-      "id": "second-year",
-      "name": "Second Year",
-      "ordinal": 2,
-      "semesters": [3, 4],
-      "branched": true
+      "id": "mtech",
+      "short": "M.Tech",
+      "name": "Master of Technology",
+      "group": "engineering",
+      "years": 2,
+      "branches": []
+    },
+
+    {
+      "id": "bca",
+      "short": "BCA",
+      "name": "Bachelor of Computer Applications",
+      "group": "computing",
+      "years": 3,
+      "branches": []
     },
     {
-      "id": "third-year",
-      "name": "Third Year",
-      "ordinal": 3,
-      "semesters": [5, 6],
-      "branched": true
+      "id": "mca",
+      "short": "MCA",
+      "name": "Master of Computer Applications",
+      "group": "computing",
+      "years": 2,
+      "branches": []
+    },
+
+    {
+      "id": "bba",
+      "short": "BBA",
+      "name": "Bachelor of Business Administration",
+      "group": "management",
+      "years": 3,
+      "branches": []
     },
     {
-      "id": "fourth-year",
-      "name": "Fourth Year",
-      "ordinal": 4,
-      "semesters": [7, 8],
-      "branched": true
+      "id": "mba",
+      "short": "MBA",
+      "name": "Master of Business Administration",
+      "group": "management",
+      "years": 2,
+      "branches": []
+    },
+    {
+      "id": "bcom",
+      "short": "B.Com",
+      "name": "Bachelor of Commerce",
+      "group": "management",
+      "years": 3,
+      "branches": []
+    },
+    {
+      "id": "mcom",
+      "short": "M.Com",
+      "name": "Master of Commerce",
+      "group": "management",
+      "years": 2,
+      "branches": []
+    },
+
+    {
+      "id": "bdes",
+      "short": "B.Des",
+      "name": "Bachelor of Design",
+      "group": "design",
+      "years": 4,
+      "branches": [
+        { "id": "fashion", "short": "Fashion Design", "name": "Fashion Design" },
+        { "id": "interior", "short": "Interior Design", "name": "Interior Design" },
+        { "id": "ux", "short": "UX & Interaction", "name": "User Experience & Interaction Design" },
+        { "id": "communication", "short": "Communication Design", "name": "Communication Design" }
+      ]
+    },
+    {
+      "id": "bfa",
+      "short": "BFA",
+      "name": "Bachelor of Fine Arts",
+      "group": "design",
+      "years": 4,
+      "check": true,
+      "branches": []
+    },
+    {
+      "id": "ba-jmc",
+      "short": "BA J&MC",
+      "name": "BA Journalism & Mass Communication",
+      "group": "design",
+      "years": 3,
+      "branches": []
+    },
+    {
+      "id": "ma-jmc",
+      "short": "MA J&MC",
+      "name": "MA Journalism & Mass Communication",
+      "group": "design",
+      "years": 2,
+      "branches": []
+    },
+
+    {
+      "id": "bsc",
+      "short": "B.Sc (Hons)",
+      "name": "Bachelor of Science (Honours)",
+      "group": "science",
+      "years": 3,
+      "check": true,
+      "note": "Three years, or four with the honours-with-research year.",
+      "branches": []
+    },
+    {
+      "id": "msc",
+      "short": "M.Sc",
+      "name": "Master of Science",
+      "group": "science",
+      "years": 2,
+      "branches": []
+    },
+
+    {
+      "id": "ba",
+      "short": "BA (Hons)",
+      "name": "Bachelor of Arts (Honours)",
+      "group": "arts",
+      "years": 3,
+      "check": true,
+      "branches": []
+    },
+
+    {
+      "id": "ba-llb",
+      "short": "BA LLB (Hons)",
+      "name": "BA LLB (Honours)",
+      "group": "law",
+      "years": 5,
+      "branches": []
+    },
+    {
+      "id": "bba-llb",
+      "short": "BBA LLB (Hons)",
+      "name": "BBA LLB (Honours)",
+      "group": "law",
+      "years": 5,
+      "branches": []
+    },
+    {
+      "id": "llb",
+      "short": "LLB",
+      "name": "Bachelor of Laws",
+      "group": "law",
+      "years": 3,
+      "branches": []
+    },
+    {
+      "id": "llm",
+      "short": "LLM",
+      "name": "Master of Laws",
+      "group": "law",
+      "years": 1,
+      "check": true,
+      "branches": []
+    },
+
+    {
+      "id": "barch",
+      "short": "B.Arch",
+      "name": "Bachelor of Architecture",
+      "group": "architecture",
+      "years": 5,
+      "branches": []
+    },
+    {
+      "id": "march",
+      "short": "M.Arch",
+      "name": "Master of Architecture",
+      "group": "architecture",
+      "years": 2,
+      "branches": []
+    },
+
+    {
+      "id": "bhm",
+      "short": "BHM",
+      "name": "Bachelor of Hotel Management",
+      "group": "hospitality",
+      "years": 4,
+      "check": true,
+      "branches": []
+    },
+
+    {
+      "id": "bpes",
+      "short": "BPES",
+      "name": "Bachelor of Physical Education & Sports",
+      "group": "sport",
+      "years": 3,
+      "check": true,
+      "branches": []
     }
-  ],
-
-  "branchGroups": [
-    { "id": "computing", "name": "Computing & IT" },
-    { "id": "engineering", "name": "Engineering" }
-  ],
-
-  "branches": [
-    { "id": "cse", "short": "CSE", "name": "Computer Science & Engineering", "group": "computing" },
-    { "id": "cse-aiml", "short": "CSE (AI & ML)", "name": "Computer Science & Engineering (Artificial Intelligence & Machine Learning)", "group": "computing" },
-    { "id": "cse-data-science", "short": "CSE (Data Science)", "name": "Computer Science & Engineering (Data Science)", "group": "computing" },
-    { "id": "cse-iot", "short": "CSE (IoT & IS)", "name": "Computer Science & Engineering (IoT & Intelligent Systems)", "group": "computing" },
-    { "id": "cse-cyber-security", "short": "CSE (Cyber Security)", "name": "Computer Science & Engineering (Cyber Security)", "group": "computing" },
-    { "id": "it", "short": "IT", "name": "Information Technology", "group": "computing" },
-    { "id": "cce", "short": "CCE", "name": "Computer & Communication Engineering", "group": "computing" },
-    { "id": "ece", "short": "ECE", "name": "Electronics & Communication Engineering", "group": "engineering" },
-    { "id": "ee", "short": "EE", "name": "Electrical Engineering", "group": "engineering" },
-    { "id": "me", "short": "ME", "name": "Mechanical Engineering", "group": "engineering" },
-    { "id": "ce", "short": "CE", "name": "Civil Engineering", "group": "engineering" },
-    { "id": "mechatronics", "short": "Mechatronics", "name": "Mechatronics Engineering", "group": "engineering" },
-    { "id": "biotech", "short": "Biotechnology", "name": "Biotechnology", "group": "engineering" },
-    { "id": "chemical", "short": "Chemical", "name": "Chemical Engineering", "group": "engineering" }
   ],
 
   "examTypes": [

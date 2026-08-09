@@ -48,7 +48,7 @@ const collections = {};
 let paperCount = 0;
 
 PYQ.expectedCollections(catalogue).forEach(function (collection) {
-  const relativePath = PYQ.collectionPath(collection.yearId, collection.branchId);
+  const relativePath = PYQ.collectionPath(collection.programmeId, collection.year, collection.branchId);
   const papers = readJson(relativePath) || [];
 
   if (!Array.isArray(papers)) {

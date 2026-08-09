@@ -15,19 +15,21 @@
   const assert = harness.assert;
 
   const CATALOGUE = {
-    years: [
-      { id: 'first-year', name: 'First Year', semesters: [1, 2], branched: false },
-      { id: 'second-year', name: 'Second Year', semesters: [3, 4], branched: true },
-    ],
-    branchGroups: [{ id: 'computing', name: 'Computing & IT' }],
-    branches: [
-      { id: 'cse', short: 'CSE', name: 'Computer Science & Engineering', group: 'computing' },
-      { id: 'it', short: 'IT', name: 'Information Technology', group: 'computing' },
+    programmeGroups: [{ id: 'engineering', name: 'Engineering & Technology' }, { id: 'management', name: 'Management & Commerce' }],
+    programmes: [
+      {
+        id: 'btech', short: 'B.Tech', name: 'Bachelor of Technology', group: 'engineering',
+        years: 4, commonYears: [1],
+        branches: [
+          { id: 'cse', short: 'CSE', name: 'Computer Science & Engineering' },
+          { id: 'it', short: 'IT', name: 'Information Technology' },
+        ],
+      },
+      { id: 'bba', short: 'BBA', name: 'Bachelor of Business Administration', group: 'management', years: 3, branches: [] },
+      { id: 'barch', short: 'B.Arch', name: 'Bachelor of Architecture', group: 'engineering', years: 5, branches: [] },
     ],
     examTypes: [{ id: 'MTE', name: 'Mid-Term' }, { id: 'ETE', name: 'End-Term' }],
   };
-
-  const SECOND_YEAR = CATALOGUE.years[1];
 
   function validPaper(overrides) {
     return Object.assign(
@@ -45,36 +47,98 @@
   }
 
   function errorsFor(paper, context) {
-    return PYQ.validatePaper(paper, Object.assign({ catalogue: CATALOGUE, year: SECOND_YEAR, currentYear: 2026 }, context || {}));
+    return PYQ.validatePaper(paper, Object.assign({ catalogue: CATALOGUE, year: 2, currentYear: 2026 }, context || {}));
   }
 
   describe('collection keys', function () {
-    it('names a branched collection year/branch', function () {
-      assert.equal(PYQ.collectionKey('second-year', 'cse'), 'second-year/cse');
+    it('names a branched collection programme/year/branch', function () {
+      assert.equal(PYQ.collectionKey('btech', 3, 'cse'), 'btech/year-3/cse');
     });
 
-    it('falls back to the common collection for an unbranched year', function () {
-      assert.equal(PYQ.collectionKey('first-year', null), 'first-year/common');
+    it('falls back to the common collection where there is no branch', function () {
+      assert.equal(PYQ.collectionKey('bba', 1, null), 'bba/year-1/common');
     });
 
     it('derives the data path from the same key', function () {
-      assert.equal(PYQ.collectionPath('second-year', 'it'), 'data/pyq/second-year/it.json');
+      assert.equal(PYQ.collectionPath('btech', 2, 'it'), 'data/pyq/btech/year-2/it.json');
+    });
+
+    it('round trips through parseCollectionKey', function () {
+      assert.deepEqual(PYQ.parseCollectionKey('btech/year-3/cse-aiml'), { programmeId: 'btech', year: 3, branchId: 'cse-aiml' });
+      assert.deepEqual(PYQ.parseCollectionKey('bba/year-1/common'), { programmeId: 'bba', year: 1, branchId: null });
+    });
+
+    it('refuses a key that is not one', function () {
+      assert.equal(PYQ.parseCollectionKey('btech/third-year/cse'), null);
+      assert.equal(PYQ.parseCollectionKey('../../etc/passwd'), null);
+      assert.equal(PYQ.parseCollectionKey(''), null);
+    });
+  });
+
+  describe('years', function () {
+    it('names them in words, up to the longest degree here', function () {
+      assert.equal(PYQ.yearName(1), 'First Year');
+      assert.equal(PYQ.yearName(5), 'Fifth Year');
+    });
+
+    it('round trips through the year id', function () {
+      assert.equal(PYQ.yearId(3), 'year-3');
+      assert.equal(PYQ.parseYearId('year-3'), 3);
+    });
+
+    it('refuses a year id that is not one', function () {
+      assert.equal(PYQ.parseYearId('third-year'), null);
+      assert.equal(PYQ.parseYearId('year-0'), null);
+      assert.equal(PYQ.parseYearId('year-'), null);
+      assert.equal(PYQ.parseYearId(''), null);
+      assert.equal(PYQ.parseYearId(null), null);
+    });
+
+    it('derives semesters rather than listing them', function () {
+      assert.deepEqual(PYQ.semestersFor(1), [1, 2]);
+      assert.deepEqual(PYQ.semestersFor(3), [5, 6]);
+      assert.deepEqual(PYQ.semestersFor(5), [9, 10]);
+    });
+  });
+
+  describe('isBranched', function () {
+    const btech = CATALOGUE.programmes[0];
+    const bba = CATALOGUE.programmes[1];
+
+    it('is false for a programme with no specialisations', function () {
+      assert.equal(PYQ.isBranched(bba, 2), false);
+    });
+
+    it('is false for a year the programme lists as common', function () {
+      assert.equal(PYQ.isBranched(btech, 1), false);
+    });
+
+    it('is true for every other year of a branched programme', function () {
+      assert.equal(PYQ.isBranched(btech, 2), true);
+      assert.equal(PYQ.isBranched(btech, 4), true);
     });
   });
 
   describe('expectedCollections', function () {
     const collections = PYQ.expectedCollections(CATALOGUE);
-
-    it('gives an unbranched year exactly one collection', function () {
-      const firstYear = collections.filter((collection) => collection.yearId === 'first-year');
-      assert.equal(firstYear.length, 1);
-      assert.equal(firstYear[0].key, 'first-year/common');
+    const keys = collections.map(function (collection) {
+      return collection.key;
     });
 
-    it('gives a branched year one collection per branch', function () {
-      const secondYear = collections.filter((collection) => collection.yearId === 'second-year');
-      assert.equal(secondYear.length, CATALOGUE.branches.length);
-      assert.deepEqual(secondYear.map((collection) => collection.key), ['second-year/cse', 'second-year/it']);
+    it("gives B.Tech's common first year exactly one collection", function () {
+      assert.deepEqual(keys.filter((k) => k.indexOf('btech/year-1/') === 0), ['btech/year-1/common']);
+    });
+
+    it('gives each later B.Tech year one collection per branch', function () {
+      assert.deepEqual(keys.filter((k) => k.indexOf('btech/year-3/') === 0), ['btech/year-3/cse', 'btech/year-3/it']);
+    });
+
+    it('gives an unbranched programme one collection per year', function () {
+      assert.deepEqual(keys.filter((k) => k.indexOf('bba/') === 0), ['bba/year-1/common', 'bba/year-2/common', 'bba/year-3/common']);
+    });
+
+    it('follows each programme to its own length', function () {
+      assert.equal(keys.filter((k) => k.indexOf('barch/') === 0).length, 5);
     });
   });
 
@@ -84,7 +148,7 @@
     });
 
     it('accepts a paper that ships a committed PDF instead of a link', function () {
-      const paper = validPaper({ url: undefined, file: 'papers/second-year/cse/cs2001-mte-2024.pdf' });
+      const paper = validPaper({ url: undefined, file: 'papers/btech/year-2/cse/cs2001-mte-2024.pdf' });
       delete paper.url;
       assert.deepEqual(errorsFor(paper), []);
     });
@@ -117,8 +181,12 @@
     });
 
     it('rejects a semester that does not belong to the year', function () {
-      const errors = errorsFor(validPaper({ semester: 5 }));
-      assert.ok(errors.some((error) => error.indexOf('semester 5') !== -1), errors.join('; '));
+      const errors = errorsFor(validPaper({ semester: 7 }));
+      assert.ok(errors.some((error) => error.indexOf('semester 7') !== -1), errors.join('; '));
+    });
+
+    it('accepts a semester that does, for a five-year degree', function () {
+      assert.deepEqual(errorsFor(validPaper({ semester: 9 }), { year: 5 }), []);
     });
 
     it('rejects a year outside the plausible range', function () {
@@ -233,9 +301,9 @@
     });
 
     it('resolves a committed file against the site root', function () {
-      const paper = validPaper({ file: 'papers/second-year/cse/x.pdf' });
+      const paper = validPaper({ file: 'papers/btech/year-2/cse/x.pdf' });
       delete paper.url;
-      assert.equal(PYQ.paperHref(paper, '../'), '../papers/second-year/cse/x.pdf');
+      assert.equal(PYQ.paperHref(paper, '../'), '../papers/btech/year-2/cse/x.pdf');
     });
   });
 });

@@ -14,6 +14,29 @@ Everything below has landed on `main`.
 
 ### Added
 
+- **Every programme MUJ runs, not just B.Tech.** The archive was engineering-shaped: four years, one
+  branch list. It now covers 23 programmes across 10 faculties — BBA, BCA, MBA, B.Com, B.Des, BFA,
+  journalism, the sciences, the five-year law degrees, B.Arch, hotel management, physical education
+  — 124 collections in total.
+
+  A collection is now `<programme>/year-N/<specialisation>` rather than `<year>/<branch>`, because
+  "third year CSE" is unambiguous and "second year" is not. Programmes carry their own length, so a
+  three-year BBA has three year buckets and a five-year B.Arch has five; `semestersFor()` derives
+  semesters from the year rather than listing them. Whether a year splits by specialisation is
+  `isBranched(programme, year)` — true when the programme has branches and the year is not in its
+  `commonYears`. B.Tech's common first year is expressed that way instead of as a flag the view
+  special-cases, which is why programmes with no specialisations at all needed no new code.
+
+  The archive routes three levels (`#/btech/year-3/cse-aiml`), the scanner asks for the programme
+  first and rebuilds the year and specialisation lists from it, and old two-level links
+  (`#/second-year/cse`) redirect rather than 404.
+
+- **`data/pyq/subjects.json`** — the subject picker's curated lists, keyed by collection. It ships
+  with a key for every collection and a list for none: the lists have to come from MUJ's real
+  curriculum, and an invented subject code files a paper under a subject that does not exist. The
+  picker works regardless, offering the union of this file and every subject already filed in that
+  collection — so a subject is typed once, by whoever contributes the first paper for it.
+
 - **A scanner, so contributing takes a minute and no Git.** `pyq/add/` walks through four steps:
   where the paper goes, what it is, the pages, submit. Pages come from the camera, from photos on
   the device, or from a PDF the contributor already has — all three are equal choices, and camera

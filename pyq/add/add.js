@@ -56,26 +56,20 @@
     return el;
   }
 
-  catalogue.years
-    .slice()
-    .sort(function (a, b) {
-      return a.ordinal - b.ordinal;
-    })
-    .forEach(function (year) {
-      $('year').appendChild(option(year.id, year.name));
+  // Programmes are grouped, because twenty-odd of them in one flat list is a
+  // scroll rather than a choice.
+  (catalogue.programmeGroups || []).forEach(function (group) {
+    const programmes = catalogue.programmes.filter(function (programme) {
+      return programme.group === group.id;
     });
+    if (programmes.length === 0) return;
 
-  catalogue.branchGroups.forEach(function (group) {
     const optgroup = document.createElement('optgroup');
     optgroup.label = group.name;
-    catalogue.branches
-      .filter(function (branch) {
-        return branch.group === group.id;
-      })
-      .forEach(function (branch) {
-        optgroup.appendChild(option(branch.id, branch.short + ' — ' + branch.name));
-      });
-    $('branch').appendChild(optgroup);
+    programmes.forEach(function (programme) {
+      optgroup.appendChild(option(programme.id, programme.short + ' — ' + programme.name));
+    });
+    $('programme').appendChild(optgroup);
   });
 
   catalogue.examTypes.forEach(function (type) {
@@ -86,27 +80,65 @@
   $('paper-year').min = String(PYQ.EARLIEST_YEAR);
   $('paper-year').value = String(new Date().getFullYear());
 
+  function currentProgramme() {
+    return PYQ.findProgramme(catalogue, $('programme').value);
+  }
+
   function currentYear() {
-    return catalogue.years.find(function (year) {
-      return year.id === $('year').value;
-    });
+    const year = PYQ.parseYearId($('year').value);
+    const programme = currentProgramme();
+    if (!programme || !year || year > programme.years) return null;
+    return year;
   }
 
   function currentBranch() {
+    const programme = currentProgramme();
     const year = currentYear();
-    if (!year || !year.branched) return null;
-    return catalogue.branches.find(function (branch) {
-      return branch.id === $('branch').value;
-    });
+    if (!programme || !year || !PYQ.isBranched(programme, year)) return null;
+    return PYQ.findBranch(programme, $('branch').value) || null;
   }
 
-  /** First year has no branch, and its semesters differ — both follow the year. */
-  function syncYear() {
-    const year = currentYear();
-    if (!year) return;
+  /**
+   * Every list below the programme depends on it: a three-year BBA has no
+   * fourth year, and only some programmes split by specialisation at all. So
+   * the year list, the branch list and the subject picker are all rebuilt from
+   * the programme rather than filtered from one global list.
+   */
+  function syncProgramme() {
+    const programme = currentProgramme();
+    if (!programme) return;
 
-    $('branch-field').hidden = !year.branched;
-    $('branch-hint').textContent = year.branched ? '' : '';
+    const years = $('year');
+    const wanted = years.value;
+    years.textContent = '';
+    for (let year = 1; year <= programme.years; year += 1) {
+      years.appendChild(option(PYQ.yearId(year), PYQ.yearName(year)));
+    }
+    // Keep the year across a programme change where it still exists — someone
+    // correcting "BBA" to "B.Com" means the same year, not the first.
+    if (wanted && PYQ.parseYearId(wanted) <= programme.years) years.value = wanted;
+
+    syncYear();
+  }
+
+  /** Whether a year splits by specialisation is a property of the year. */
+  function syncYear() {
+    const programme = currentProgramme();
+    const year = currentYear();
+    if (!programme || !year) return;
+
+    const branched = PYQ.isBranched(programme, year);
+    $('branch-field').hidden = !branched;
+
+    if (branched) {
+      const branches = $('branch');
+      const wanted = branches.value;
+      branches.textContent = '';
+      programme.branches.forEach(function (branch) {
+        branches.appendChild(option(branch.id, branch.short === branch.name ? branch.short : branch.short + ' — ' + branch.name));
+      });
+      if (wanted && PYQ.findBranch(programme, wanted)) branches.value = wanted;
+    }
 
     syncSubjects();
   }
@@ -119,11 +151,12 @@
    * offered to everyone afterwards.
    */
   function syncSubjects() {
+    const programme = currentProgramme();
     const year = currentYear();
     const branch = currentBranch();
-    if (!year) return;
+    if (!programme || !year) return;
 
-    const key = PYQ.collectionKey(year.id, branch ? branch.id : null);
+    const key = PYQ.collectionKey(programme.id, year, branch ? branch.id : null);
     const curated = (DATA.subjects || {})[key] || [];
     const filed = (DATA.collections || {})[key] || [];
     const subjects = PYQ.subjectsFor(curated, filed);
@@ -158,6 +191,7 @@
     if (other) $('subject').focus();
   }
 
+  $('programme').addEventListener('change', syncProgramme);
   $('year').addEventListener('change', syncYear);
   $('branch').addEventListener('change', syncSubjects);
   $('subject-pick').addEventListener('change', syncSubjectOther);
@@ -177,20 +211,31 @@
    */
   const params = new URLSearchParams(window.location.search);
 
-  const wantedYear = catalogue.years.find(function (year) {
-    return year.id === params.get('year');
-  });
-  if (wantedYear) $('year').value = wantedYear.id;
+  const wantedProgramme = PYQ.findProgramme(catalogue, params.get('programme'));
+  if (wantedProgramme) $('programme').value = wantedProgramme.id;
 
-  syncYear();
+  syncProgramme();
 
-  const wantedBranch = catalogue.branches.find(function (branch) {
-    return branch.id === params.get('branch');
-  });
-  if (wantedBranch && wantedYear && wantedYear.branched) {
+  // The archive links with a bare year number; a stray "year-3" is accepted
+  // too, because that is what the hash route looks like and someone will paste
+  // one sooner or later.
+  const askedYear = Number(params.get('year')) || PYQ.parseYearId(params.get('year'));
+  const wantedYear = wantedProgramme && Number.isInteger(askedYear) && askedYear >= 1 && askedYear <= wantedProgramme.years
+    ? askedYear
+    : null;
+  if (wantedYear) {
+    $('year').value = PYQ.yearId(wantedYear);
+    // syncProgramme() built the branch list and subject picker for the default
+    // year, which is not this one. Rebuild both.
+    syncYear();
+  }
+
+  const wantedBranch = wantedYear && PYQ.isBranched(wantedProgramme, wantedYear)
+    ? PYQ.findBranch(wantedProgramme, params.get('branch'))
+    : null;
+  if (wantedBranch) {
     $('branch').value = wantedBranch.id;
-    // syncYear() ran above with the default branch still selected, so the
-    // picker was built for the wrong collection. Rebuild it now.
+    // Same again: the picker above was built for the wrong collection.
     syncSubjects();
   }
 
@@ -221,7 +266,10 @@
   }
 
   /** True once the URL has fully answered "where does this paper go". */
-  const placeKnown = Boolean(wantedYear) && (!wantedYear.branched || Boolean(wantedBranch));
+  const placeKnown =
+    Boolean(wantedProgramme) &&
+    Boolean(wantedYear) &&
+    (!PYQ.isBranched(wantedProgramme, wantedYear) || Boolean(wantedBranch));
 
   /** True once it has also answered "what is it" well enough to skip the form. */
   const detailsKnown = placeKnown && Boolean(wantedSubject) && Boolean(wantedExam);
@@ -271,13 +319,20 @@
 
     const parts = [];
     if (prefilled.place && step !== 'place') {
+      const programme = currentProgramme();
       const year = currentYear();
       const branch = currentBranch();
-      parts.push({ text: branch ? year.name + ' › ' + branch.short : year.name, step: 'place' });
+      const where = [programme.short, PYQ.yearName(year)];
+      if (branch) where.push(branch.short);
+      parts.push({ text: where.join(' › '), step: 'place' });
     }
-    if (prefilled.details && step !== 'details' && $('subject').value.trim()) {
-      const code = $('code').value.trim();
-      parts.push({ text: (code ? code + ' — ' : '') + $('subject').value.trim() + ' · ' + $('exam').value, step: 'details' });
+    if (prefilled.details && step !== 'details') {
+      // From buildPaper, not from the free-text fields: a subject chosen from
+      // the picker never touches those, so reading them showed nothing back.
+      const paper = buildPaper();
+      if (paper.subject) {
+        parts.push({ text: (paper.code ? paper.code + ' — ' : '') + paper.subject + ' · ' + paper.exam, step: 'details' });
+      }
     }
 
     bar.hidden = parts.length === 0;
@@ -383,9 +438,10 @@
    * not the contributor's problem.
    */
   function buildId(paper) {
+    const programme = currentProgramme();
     const branch = currentBranch();
     const parts = [
-      branch ? branch.id : 'fy',
+      branch ? branch.id : programme.id,
       String(paper.year),
       String(paper.exam).toLowerCase(),
       paper.code ? slug(paper.code) : slug(paper.subject),
@@ -423,12 +479,15 @@
   }
 
   function buildSubmission() {
+    const programme = currentProgramme();
     const year = currentYear();
     const branch = currentBranch();
     return {
-      year: year.id,
+      programme: programme.id,
+      year: year,
       branch: branch ? branch.id : null,
-      yearName: year.name,
+      programmeName: programme.short + ' — ' + programme.name,
+      yearName: PYQ.yearName(year),
       branchName: branch ? branch.name : null,
       paper: buildPaper(),
     };
@@ -681,8 +740,9 @@
       ['Subject', submission.paper.subject],
       ['Code', submission.paper.code || '—'],
       ['Exam', submission.paper.exam],
+      ['Programme', submission.programmeName],
       ['Year', submission.yearName],
-      ['Branch', submission.branchName || 'Common to all branches'],
+      ['Specialisation', submission.branchName || 'Not split by specialisation'],
       ['Pages', state.existingPdf ? state.existingPdf.name : state.pages.length + ' scanned'],
     ];
 
@@ -701,14 +761,20 @@
 
     $('year-display').textContent = submission.paper.exam + ' ' + submission.paper.year;
 
-    // The do-it-yourself route needs the same paths the workflow would use.
+    // The do-it-yourself route needs the same paths the workflow would use, so
+    // it is given the same resolved shape parseBody hands the workflow.
     const resolved = {
+      programme: currentProgramme(),
       year: currentYear(),
       branch: currentBranch(),
       paper: submission.paper,
     };
     $('diy-pdf-path').textContent = Submission.filePath(resolved);
-    $('diy-json-path').textContent = PYQ.collectionPath(resolved.year.id, resolved.branch ? resolved.branch.id : null);
+    $('diy-json-path').textContent = PYQ.collectionPath(
+      resolved.programme.id,
+      resolved.year,
+      resolved.branch ? resolved.branch.id : null
+    );
     $('diy-json').textContent = JSON.stringify(
       Object.assign({}, submission.paper, { file: Submission.filePath(resolved) }),
       null,
