@@ -1,0 +1,65 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  # So the site can be redeployed without an empty commit — useful after
+  # changing a Pages setting, or to recover from a failed deploy.
+  workflow_dispatch:
+
+# Deploying from a workflow rather than the "deploy from a branch" setting,
+# which is how accelerate-muj/resources is published. Two reasons: the setting
+# can only be flipped by hand in the repository's settings, whereas this file
+# turns Pages on by itself via `enablement: true` below; and having the
+# deployment in the repository makes it reviewable and reproducible instead of
+# being invisible state somebody set once.
+#
+# `pages: write` and `id-token: write` are the minimum deploy-pages needs. The
+# organisation defaults GITHUB_TOKEN to read-only (SETUP_LOG.md decision #35);
+# declaring permissions here raises them for this workflow only.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. `cancel-in-progress: false` so a run that is
+# already publishing is allowed to finish rather than leaving the site
+# half-updated — a queued run will redeploy straight after.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+# Actions are pinned to full commit SHAs because the organisation enables
+# `sha_pinning_required` (SETUP_LOG.md #36/#55) — a movable tag like @v5 is
+# rejected before the run starts. The trailing comment records the tag.
+
+jobs:
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # `enablement: true` creates the Pages site if the repository does not
+      # have one yet, so the first run of this workflow is what turns Pages on.
+      - name: Configure Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+        with:
+          enablement: true
+
+      # The whole repository root is the site. There is no build step — the
+      # pages are hand-written HTML and the archive is baked into pyq/data.js
+      # by build.js, which CI separately checks is in sync.
+      - name: Upload site
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: .
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
