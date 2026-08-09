@@ -88,10 +88,30 @@ The poster's flight path, flattened into a divider with one lit node:
 
 One per page at most. It marks the break between the pitch and the content.
 
-### The slash
+### The logo
 
-A crimson bar before the wordmark — the rocket's trail reduced to a mark. It's a `::before` on the
-site title; there is no image to load and nothing to give alt text to.
+The club's lockup — the rocket, the script *ccelerate* wordmark and the swoosh — sits in every page
+header. It **is** the wordmark, so it carries `alt="Accelerate"` and no text sits beside it.
+
+| File | What it is |
+|---|---|
+| `assets/brand/logo.png`, `logo@2x.png` | The full lockup, 1.92:1, transparent. Header use. |
+| `assets/brand/mark.png`, `mark@2x.png` | The rocket alone. Square-ish contexts and the source for the icons below. |
+| `assets/brand/favicon-32.png`, `apple-touch-icon.png` | Generated from the mark. |
+
+**Both were cut from a solid background by flood-filling from the edges, not by removing a colour.**
+That distinction matters: the lockup sits on black and the rocket has black details inside it, and
+the standalone rocket sits on white with a white body. Keying out the background colour globally
+destroys either one. Flood-fill reaches only the field connected to the border, so enclosed detail
+survives. Use the same approach if you regenerate them, and check the result composited on crimson —
+a leftover fringe is invisible on black and obvious there.
+
+Header sizing is by height (`3.25rem`), width left to the aspect ratio. It wants to be roughly that
+big: the wordmark occupies only the lower right of the lockup, so at a typical 40px logo height the
+script becomes unreadable. The `width`/`height` attributes in the markup are the intrinsic pixel
+size, which reserves the box and stops the header jumping as the image loads.
+
+Do not put a plate, a glow or a border behind it.
 
 ### The starfield
 
