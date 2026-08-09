@@ -13,14 +13,8 @@ on:
 # turns Pages on by itself via `enablement: true` below; and having the
 # deployment in the repository makes it reviewable and reproducible instead of
 # being invisible state somebody set once.
-#
-# `pages: write` and `id-token: write` are the minimum deploy-pages needs. The
-# organisation defaults GITHUB_TOKEN to read-only (SETUP_LOG.md decision #35);
-# declaring permissions here raises them for this workflow only.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # One deployment at a time. `cancel-in-progress: false` so a run that is
 # already publishing is allowed to finish rather than leaving the site
@@ -32,15 +26,19 @@ concurrency:
 # Actions are pinned to full commit SHAs because the organisation enables
 # `sha_pinning_required` (SETUP_LOG.md #36/#55) — a movable tag like @v5 is
 # rejected before the run starts. The trailing comment records the tag.
+#
+# Split into build and deploy, matching GitHub's own starter workflow. Only the
+# deploy job binds the `github-pages` environment, so enabling Pages happens in
+# a job that is not itself gated on that environment existing.
 
 jobs:
-  deploy:
-    name: Deploy to GitHub Pages
+  build:
+    name: Build site artifact
     runs-on: ubuntu-latest
 
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -84,6 +82,20 @@ jobs:
           path: ${{ runner.temp }}/artifact.tar
           retention-days: 1
 
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
