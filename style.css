@@ -147,30 +147,35 @@ main[tabindex="-1"]:focus {
 
 .site-title {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  line-height: 0;
 }
 
 .site-title a {
-  color: var(--paper);
+  display: inline-block;
   text-decoration: none;
 }
 
-.site-title a:hover {
-  color: var(--flare-bright);
+/*
+ * The club's logo — the rocket and the script wordmark as one lockup. It *is*
+ * the wordmark, so it carries alt="Accelerate" and there is no text beside it
+ * to duplicate.
+ *
+ * Sized by height so it matches the nav's optical weight, with the width left
+ * to the aspect ratio (roughly 1.92:1). The width/height attributes in the
+ * markup are the intrinsic pixel size — they reserve the right box before the
+ * image loads, so the header does not jump.
+ *
+ * The artwork is transparent, cut from its black field by flood-filling from
+ * the edges. Do not put a plate or a glow behind it.
+ */
+.site-logo {
+  display: block;
+  width: auto;
+  height: 3.25rem;
 }
 
-/* The rocket's trail, reduced to a mark: a crimson slash before the wordmark. */
-.site-title a::before {
-  content: "";
-  display: inline-block;
-  width: 0.9rem;
-  height: 0.18rem;
-  margin-right: 0.6rem;
-  vertical-align: 0.28em;
-  background: var(--flare);
+.site-title a:hover .site-logo {
+  opacity: 0.85;
 }
 
 .site-nav {

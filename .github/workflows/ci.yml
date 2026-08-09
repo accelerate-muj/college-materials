@@ -77,20 +77,36 @@ jobs:
 
       # The site is hand-written HTML with no framework to catch a mistyped
       # href, and a broken stylesheet path only shows up as an unstyled page.
+      # srcset is checked too: a missing 2x image is invisible on the machine
+      # of anyone without a retina screen, which is the worst kind of bug.
       - name: Check referenced local files exist
         run: |
           set -euo pipefail
           status=0
-          while IFS=: read -r file ref; do
-            [ -z "${ref:-}" ] && continue
-            target="$(dirname "$file")/$ref"
-            if [ ! -e "$target" ]; then
+
+          check() {
+            local file="$1" ref="$2"
+            [ -z "$ref" ] && return 0
+            if [ ! -e "$(dirname "$file")/$ref" ]; then
               echo "::error file=$file::references missing local file '$ref'"
               status=1
             fi
+          }
+
+          while IFS=: read -r file ref; do
+            check "$file" "${ref:-}"
           done < <(
             grep -roE '(href|src)="[^"#:]+\.(css|js|png|jpg|svg|pdf)"' --include='*.html' . \
               | sed -E 's/"([^"]+)"$/\1/; s/(href|src)=//'
           )
+
+          # Each srcset candidate is "<url> <descriptor>", comma separated.
+          while IFS= read -r file; do
+            grep -oE 'srcset="[^"]+"' "$file" | sed -E 's/srcset="//; s/"$//' | tr ',' '\n' \
+              | while read -r candidate; do
+                  check "$file" "$(echo "$candidate" | awk '{print $1}')"
+                done
+          done < <(grep -rlE 'srcset=' --include='*.html' . || true)
+
           if [ "$status" -eq 0 ]; then echo "All local asset references resolve."; fi
           exit "$status"
