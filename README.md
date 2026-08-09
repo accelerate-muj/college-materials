@@ -7,6 +7,12 @@ somebody's Drive fills up.
 
 **Browse it: [accelerate-muj.github.io/college-materials](https://accelerate-muj.github.io/college-materials/)**
 
+> **Pages needs one manual switch before that URL works.**
+> Pages is enabled on this repository, but its source is still set to *GitHub Actions*, and this
+> organisation cannot deploy that way — see [Enabling Pages](#enabling-pages) below. Go to
+> **Settings → Pages → Build and deployment → Source → Deploy from a branch**, pick `main` and
+> `/ (root)`, and save. GitHub serves the site on every push from then on.
+
 ## What's here
 
 ### Past Year Question Papers
@@ -101,6 +107,35 @@ flowchart TD
     G -->|yes| I["Maintainer merges"]
     I --> J["GitHub Pages redeploys<br/>from main"]
 ```
+
+## Enabling Pages
+
+The site is served from `main` at the repository root, with `.nojekyll` — the same setup
+[`resources`](https://github.com/accelerate-muj/resources) uses. Set it under
+**Settings → Pages → Build and deployment → Source → Deploy from a branch**, `main` / `/ (root)`.
+
+There is deliberately **no Pages workflow** in this repository, and it is worth recording why so
+nobody spends an afternoon rediscovering it. The usual
+`actions/upload-pages-artifact` + `actions/deploy-pages` flow cannot run under this organisation's
+settings:
+
+1. `actions/upload-pages-artifact` is a composite action whose last step is
+   `uses: actions/upload-artifact@v4` — a movable tag inside a file we do not control. The org
+   enables `sha_pinning_required` (`SETUP_LOG.md` #36/#55), which rejects the run when it resolves
+   that reference. Workable: the action's two steps can be inlined and the SHA pinned locally.
+2. `actions/deploy-pages` authenticates over OIDC and needs `id-token: write`. **That grant is not
+   available here.** Every job requesting it failed at dispatch in about a second with no steps and
+   no logs, while an otherwise identical job without it ran normally — reproduced across four runs,
+   including after Pages and its `github-pages` environment already existed, which rules out the
+   missing-environment explanation.
+3. Setting the Pages source to a branch over the REST API from a workflow returns **403**: a
+   workflow `GITHUB_TOKEN` with `pages: write` may create a Pages site but not change its source.
+
+So the source has to be set once by hand in the UI. After that no workflow is involved: GitHub
+rebuilds and serves the branch on every push, which is why `.nojekyll` is committed.
+
+If the club ever wants workflow-based deployment, the fix is to allow `id-token: write` for the
+organisation; the inlined-artifact workaround from point 1 is in this repo's history at `62a777a`.
 
 ## Community health files
 
