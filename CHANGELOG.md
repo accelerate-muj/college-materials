@@ -26,6 +26,14 @@ Everything below is on `claude/repo-structure-pyq-pages-m5lcsu` and not yet merg
 - **A GitHub Pages site**, served from `main` at the repository root with `.nojekyll`, matching how
   `resources` is deployed. A landing page at `index.html` and the archive at `pyq/`.
 
+  Pages is now enabled on the repository, but its **source must be switched to "Deploy from a
+  branch" (`main` / root) by hand** — see [Enabling Pages](README.md#enabling-pages). Workflow-based
+  deployment was attempted and abandoned: `actions/deploy-pages` needs `id-token: write`, which this
+  organisation does not grant (jobs requesting it fail at dispatch with no logs, reproduced four
+  times including after the `github-pages` environment existed), and setting the Pages source over
+  the REST API from a workflow returns 403. The README records the full finding so it is not
+  rediscovered later.
+
 - **The PYQ archive.** Three screens — year, branch, papers — reached by hash routing so the site
   works both on Pages and by double-clicking the file. First year is a single common collection;
   second, third and fourth year each split into 14 branches (CSE, its four specialisations, IT,
