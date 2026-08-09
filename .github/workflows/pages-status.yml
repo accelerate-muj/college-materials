@@ -1,0 +1,38 @@
+name: Pages status
+
+# Read-only diagnostic. Prints the repository's current GitHub Pages
+# configuration so the source, build type and status can be checked without
+# guessing at what the settings page shows. Run it from the Actions tab.
+#
+# This deploys nothing. See README.md ("Enabling Pages") for why deployment
+# cannot run from a workflow under this organisation's settings.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: read
+
+jobs:
+  status:
+    name: Report Pages configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read the Pages API
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/pages.json -w '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/pages")
+
+          echo "HTTP $code"
+          if [ "$code" = "404" ]; then
+            echo "No Pages site exists for this repository."
+            exit 0
+          fi
+          cat /tmp/pages.json
