@@ -1,10 +1,10 @@
 /*
  * The Accelerate design system, as applied to College Materials.
  *
- * Black, crimson, white. Condensed uppercase for display, a geometric grotesque
- * for reading, and monospace wherever the interface is quoting a machine — the
- * same three voices the club's poster work uses. DESIGN.md documents the system
- * itself and is the file to read before changing anything here.
+ * The system itself — tokens, the three type voices, focus, motion and the
+ * shared motifs — lives in assets/accelerate.css, which is the file other club
+ * repos copy. This file holds only what is specific to College Materials, and
+ * assumes accelerate.css is linked before it. DESIGN.md explains the reasoning.
  *
  * Two constraints shape the implementation:
  *
@@ -20,43 +20,11 @@
  *      If you change a colour, re-measure it.
  */
 
-/* --- Tokens --------------------------------------------------------------- */
-
-:root {
-  /* The identity is dark. There is no light variant — the club's visual work is
-   * black-and-crimson, and a washed-out white version would read as a different
-   * project. Declaring the scheme keeps form controls and scrollbars in step. */
-  color-scheme: dark;
-
-  --ink: #0a0a0a; /* page */
-  --ink-raised: #131317; /* cards, chips */
-  --ink-hover: #1b1b21;
-  --paper: #ffffff; /* 19.8:1 on --ink */
-  --paper-dim: #9ca0a6; /* 7.5:1 on --ink */
-  --flare: #ee3b44; /* 5.0:1 on --ink */
-  --flare-bright: #ff5c63; /* 6.6:1 on --ink */
-  --hairline: rgba(255, 255, 255, 0.14);
-  --hairline-strong: rgba(255, 255, 255, 0.28);
-
-  --font-display: "Anton", "Arial Narrow", "Helvetica Neue", sans-serif;
-  --font-body: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-
-  --radius: 0.35rem;
-  --measure: 72rem;
-}
-
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
-
-/* --- Page ----------------------------------------------------------------
- * The starfield is drawn with gradients rather than an image: a handful of
- * one-pixel dots, fixed so they sit behind the content like a backdrop instead
- * of scrolling with it. No network request, no alt text to get wrong.
- */
 
 body {
   margin: 0;
@@ -65,17 +33,6 @@ body {
   font-size: 1rem;
   line-height: 1.65;
   color: var(--paper);
-  background-color: var(--ink);
-  background-image: radial-gradient(1px 1px at 12% 18%, rgba(255, 255, 255, 0.5), transparent 100%),
-    radial-gradient(1px 1px at 78% 12%, rgba(255, 255, 255, 0.35), transparent 100%),
-    radial-gradient(1.5px 1.5px at 44% 32%, rgba(255, 255, 255, 0.25), transparent 100%),
-    radial-gradient(1px 1px at 88% 54%, rgba(255, 255, 255, 0.4), transparent 100%),
-    radial-gradient(1px 1px at 22% 68%, rgba(255, 255, 255, 0.3), transparent 100%),
-    radial-gradient(1px 1px at 62% 84%, rgba(255, 255, 255, 0.35), transparent 100%),
-    radial-gradient(1.5px 1.5px at 8% 92%, rgba(255, 255, 255, 0.2), transparent 100%),
-    radial-gradient(900px 500px at 78% 6%, rgba(238, 59, 68, 0.07), transparent 70%);
-  background-attachment: fixed;
-  background-repeat: no-repeat;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -102,17 +59,6 @@ body {
 
 .skip-link:focus {
   left: 0;
-}
-
-/* --- Focus ---------------------------------------------------------------- */
-
-a:focus-visible,
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-summary:focus-visible {
-  outline: 2px solid var(--flare-bright);
-  outline-offset: 3px;
 }
 
 /*
@@ -153,25 +99,6 @@ main[tabindex="-1"]:focus {
 .site-title a {
   display: inline-block;
   text-decoration: none;
-}
-
-/*
- * The club's logo — the rocket and the script wordmark as one lockup. It *is*
- * the wordmark, so it carries alt="Accelerate" and there is no text beside it
- * to duplicate.
- *
- * Sized by height so it matches the nav's optical weight, with the width left
- * to the aspect ratio (roughly 1.92:1). The width/height attributes in the
- * markup are the intrinsic pixel size — they reserve the right box before the
- * image loads, so the header does not jump.
- *
- * The artwork is transparent, cut from its black field by flood-filling from
- * the edges. Do not put a plate or a glow behind it.
- */
-.site-logo {
-  display: block;
-  width: auto;
-  height: 3.25rem;
 }
 
 .site-title a:hover .site-logo {
@@ -220,11 +147,6 @@ h1 {
   margin: 0 0 1rem;
 }
 
-/* The poster's device: the sentence turns crimson at the point it makes a claim. */
-.accent {
-  color: var(--flare);
-}
-
 h2 {
   font-family: var(--font-display);
   font-size: 1.6rem;
@@ -248,24 +170,6 @@ h3 {
   color: var(--paper-dim);
   max-width: 44rem;
   margin: 0 0 2.5rem;
-}
-
-/*
- * The terminal prompt, used as an eyebrow above a heading. It is decoration
- * that happens to be text, so the "$ " is generated rather than written into
- * the markup — a screen reader should read the label, not the shell prompt.
- */
-.prompt {
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  color: var(--paper-dim);
-  letter-spacing: 0.01em;
-  margin: 0 0 0.9rem;
-}
-
-.prompt::before {
-  content: "$ ";
-  color: var(--flare);
 }
 
 a {
@@ -323,32 +227,6 @@ code {
 .breadcrumb a:hover {
   color: var(--paper);
   border-bottom-color: var(--flare);
-}
-
-/* --- Trajectory rule -----------------------------------------------------
- * The poster's flight path: a hairline that drops, runs, and climbs to a lit
- * node. Here it is flattened to a divider with a single glowing stop.
- */
-
-.trajectory {
-  position: relative;
-  height: 1px;
-  border: 0;
-  margin: 3rem 0;
-  background: linear-gradient(90deg, transparent, var(--hairline-strong) 12%, var(--hairline-strong) 88%, transparent);
-}
-
-.trajectory::after {
-  content: "";
-  position: absolute;
-  right: 12%;
-  top: 50%;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  transform: translateY(-50%);
-  background: var(--flare);
-  box-shadow: 0 0 0 4px rgba(238, 59, 68, 0.18), 0 0 22px 6px rgba(238, 59, 68, 0.35);
 }
 
 /* --- Card grids ----------------------------------------------------------- */
@@ -610,19 +488,6 @@ code {
 .footer-command::before {
   content: "$ ";
   color: var(--flare);
-}
-
-/* --- Motion --------------------------------------------------------------- */
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
 }
 
 /* --- Small screens -------------------------------------------------------- */
