@@ -1,0 +1,496 @@
+/*
+ * Styles specific to the scanner. The design system lives in ../../style.css
+ * and DESIGN.md; only what the contribution flow adds is here — form controls,
+ * the camera view and the page thumbnails.
+ */
+
+/* --- Progress ------------------------------------------------------------- */
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.75rem;
+  list-style: none;
+  margin: 0 0 2.5rem;
+  padding: 0 0 1.25rem;
+  border-bottom: 1px solid var(--hairline);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+}
+
+.steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0.45;
+}
+
+.steps li span {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 50%;
+}
+
+.steps li[data-state="active"] {
+  opacity: 1;
+  color: var(--paper);
+}
+
+.steps li[data-state="active"] span {
+  background: var(--flare);
+  border-color: var(--flare);
+  color: var(--ink);
+}
+
+.steps li[data-state="done"] {
+  opacity: 1;
+}
+
+.steps li[data-state="done"] span {
+  border-color: var(--flare);
+  color: var(--flare);
+}
+
+/* --- Form ----------------------------------------------------------------- */
+
+.step h2 {
+  margin-top: 0;
+}
+
+.field {
+  margin-bottom: 1.5rem;
+  max-width: 34rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0 1.25rem;
+  max-width: 34rem;
+}
+
+.row .field {
+  max-width: none;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+}
+
+.req {
+  color: var(--flare);
+  letter-spacing: 0.04em;
+}
+
+input[type="text"],
+input[type="number"],
+select {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--paper);
+  background: var(--ink-raised);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius);
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+input:hover,
+select:hover {
+  border-color: var(--paper-dim);
+}
+
+.hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.85rem;
+  color: var(--paper-dim);
+}
+
+.field.checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  max-width: 34rem;
+}
+
+.field.checkbox input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.2rem;
+  accent-color: var(--flare);
+  flex: none;
+}
+
+.field.checkbox label {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--paper-dim);
+}
+
+/* --- Buttons -------------------------------------------------------------- */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 2rem 0;
+  align-items: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  color: var(--paper);
+  background: transparent;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:hover {
+  border-color: var(--paper-dim);
+}
+
+.btn-primary {
+  background: var(--flare);
+  border-color: var(--flare);
+  color: var(--ink); /* 5.0:1 on --flare */
+  font-weight: 700;
+}
+
+.btn-primary:hover {
+  background: var(--flare-bright);
+  border-color: var(--flare-bright);
+  color: var(--ink);
+}
+
+.btn[disabled],
+.btn[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* --- Page sources ---------------------------------------------------------
+ * Scanning and uploading are equal choices, so they get equal weight — three
+ * cards rather than one primary button and two afterthoughts.
+ */
+
+.sources {
+  list-style: none;
+  margin: 1.5rem 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+  max-width: 46rem;
+}
+
+.source {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  height: 100%;
+  padding: 1.15rem 1.25rem;
+  text-align: left;
+  background: var(--ink-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.source:hover {
+  border-color: var(--flare);
+  background: var(--ink-hover);
+}
+
+.source-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--paper);
+}
+
+.source:hover .source-title {
+  color: var(--flare-bright);
+}
+
+.source-note {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--paper-dim);
+}
+
+/* --- Camera --------------------------------------------------------------- */
+
+.capture {
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+}
+
+.capture video {
+  display: block;
+  width: 100%;
+  max-height: 65vh;
+  object-fit: contain;
+  background: #000;
+}
+
+.capture-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--ink-raised);
+}
+
+.btn-shutter {
+  width: 3.6rem;
+  height: 3.6rem;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--flare);
+  border: 3px solid var(--paper);
+  box-shadow: 0 0 0 3px var(--flare);
+}
+
+.btn-shutter:hover {
+  background: var(--flare-bright);
+}
+
+.capture-count {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--paper-dim);
+  min-width: 5rem;
+  text-align: right;
+}
+
+/* --- Thumbnails ----------------------------------------------------------- */
+
+.thumbs {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 1rem;
+}
+
+.thumb {
+  position: relative;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--ink-raised);
+}
+
+.thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.thumb-index {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  padding: 0.1rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  background: var(--ink);
+  color: var(--flare);
+  border-radius: 2rem;
+}
+
+.thumb-tools {
+  display: flex;
+  border-top: 1px solid var(--hairline);
+}
+
+.thumb-tools button {
+  flex: 1;
+  padding: 0.45rem 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--paper-dim);
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--hairline);
+  cursor: pointer;
+}
+
+.thumb-tools button:last-child {
+  border-right: 0;
+}
+
+.thumb-tools button:hover {
+  color: var(--flare-bright);
+  background: rgba(238, 59, 68, 0.1);
+}
+
+/* --- Summary and submit --------------------------------------------------- */
+
+.summary {
+  border: 1px solid var(--hairline);
+  border-left: 2px solid var(--flare);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 1.2rem 1.4rem;
+  background: var(--ink-raised);
+  margin-bottom: 2rem;
+}
+
+.summary dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1.25rem;
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.summary dt {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+  padding-top: 0.15rem;
+}
+
+.summary dd {
+  margin: 0;
+}
+
+.submit-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: none;
+}
+
+.submit-steps > li {
+  border-left: 1px solid var(--hairline-strong);
+  padding: 0 0 2rem 1.5rem;
+  margin-left: 0.5rem;
+}
+
+.submit-steps > li:last-child {
+  border-left-color: transparent;
+  padding-bottom: 0;
+}
+
+.submit-steps h3 {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--flare);
+  margin-bottom: 0.5rem;
+}
+
+.submit-steps.dimmed,
+.submit-steps > li.dimmed {
+  opacity: 0.45;
+}
+
+.diy {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--hairline);
+  padding-top: 1rem;
+}
+
+.diy summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--paper-dim);
+}
+
+.diy summary:hover {
+  color: var(--paper);
+}
+
+.diy pre {
+  overflow-x: auto;
+  padding: 1rem;
+  background: var(--ink);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+}
+
+.paths code {
+  word-break: break-all;
+}
+
+/* --- Messages ------------------------------------------------------------- */
+
+.error {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--flare);
+  border-radius: var(--radius);
+  background: rgba(238, 59, 68, 0.12);
+  color: var(--paper);
+  font-size: 0.92rem;
+  max-width: 34rem;
+}
+
+.ok {
+  margin-top: 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--flare);
+}
+
+.pdf-chosen {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--flare);
+}
+
+@media (max-width: 30rem) {
+  .steps {
+    gap: 0.4rem 1rem;
+    font-size: 0.68rem;
+  }
+
+  .actions .btn {
+    flex: 1 1 auto;
+  }
+}

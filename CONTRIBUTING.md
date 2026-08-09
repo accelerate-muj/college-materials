@@ -1,5 +1,29 @@
 # Contributing
 
+## The one-minute version
+
+**[Open the scanner](https://accelerate-muj.github.io/college-materials/pyq/add/)**, photograph the
+paper or upload it, fill in three fields, and press submit. A bot commits it and opens a pull
+request for a maintainer to review. You need a GitHub account and nothing else — no Git, no
+install, no command line.
+
+What happens:
+
+1. **Scan or upload.** Camera, photos from your device, or a PDF you already have. The pages become
+   a PDF *in your browser* — nothing is uploaded while you work.
+2. **Describe it.** Subject, exam, year. Thirty seconds.
+3. **Save the PDF.** One button. It lands in your downloads.
+4. **Send it in.** Opens a pre-filled GitHub issue, signed in as you. Drag the PDF in, press submit.
+
+A bot then validates the details against the same rules CI uses, commits the paper and the JSON
+entry, and opens a pull request. **It never merges** — a maintainer reads every paper before it
+reaches the site. If something is wrong the bot comments on your issue saying exactly what; fix the
+issue and it retries by itself.
+
+The rest of this file is for people doing it by hand, or working on the site.
+
+---
+
 Most contributions here are a single JSON entry pointing at a question paper. You do not need to
 know JavaScript, and you do not need to install anything.
 

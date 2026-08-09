@@ -161,6 +161,10 @@
       }),
       trajectory(),
       el('ul', { class: 'card-grid' }, cards),
+      el('div', { class: 'empty-actions' }, [
+        el('a', { class: 'btn-cta', href: 'add/', text: 'Add a paper' }),
+        el('span', { class: 'card-meta', text: 'Scan it with your phone, or upload what you have.' }),
+      ]),
     ];
   }
 
@@ -257,24 +261,30 @@
     ]);
   }
 
-  function emptyState(year, branch) {
-    const filePath = PYQ.collectionPath(year.id, branch ? branch.id : null);
+  /** Deep-links the scanner straight to the collection the reader is looking at. */
+  function addUrl(year, branch) {
+    const params = new URLSearchParams({ year: year.id });
+    if (branch) params.set('branch', branch.id);
+    return 'add/?' + params.toString();
+  }
 
+  function emptyState(year, branch) {
     return el('div', { class: 'empty' }, [
       el('h2', { text: 'No papers here yet' }),
       el('p', {
         text:
-          'Nobody has contributed a ' +
+          'Nobody has added a ' +
           (branch ? branch.short + ' ' : '') +
           year.name.toLowerCase() +
-          ' paper yet. If you have one, adding it is a single JSON entry.',
+          ' paper yet. If you have one in front of you, photographing it takes about a minute.',
       }),
-      el('p', {}, [
-        'Add it to ',
-        el('code', { text: filePath }),
-        ' — create the file if it does not exist. ',
+      el('div', { class: 'empty-actions' }, [
+        el('a', { class: 'btn-cta', href: addUrl(year, branch), text: 'Add a paper' }),
+      ]),
+      el('p', { class: 'card-meta' }, [
+        'Prefer to do it by hand? ',
         el('a', { href: REPO + '/blob/main/CONTRIBUTING.md', text: 'The contributing guide' }),
-        ' walks through it.',
+        ' covers the JSON entry — it is four lines.',
       ]),
     ]);
   }
@@ -314,6 +324,13 @@
     groups.forEach(function (group) {
       nodes.push(subjectNode(group));
     });
+
+    // A reader who did not find what they wanted is the likeliest contributor.
+    nodes.push(
+      el('div', { class: 'empty-actions' }, [
+        el('a', { class: 'btn-cta', href: addUrl(year, branch), text: 'Add a paper' }),
+      ])
+    );
 
     return nodes;
   }
