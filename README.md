@@ -128,11 +128,22 @@ settings:
    no logs, while an otherwise identical job without it ran normally — reproduced across four runs,
    including after Pages and its `github-pages` environment already existed, which rules out the
    missing-environment explanation.
-3. Setting the Pages source to a branch over the REST API from a workflow returns **403**: a
-   workflow `GITHUB_TOKEN` with `pages: write` may create a Pages site but not change its source.
+3. Setting the Pages source over the REST API from a workflow returns
+   **403 `Resource not accessible by integration`** — for `source`, for `build_type`, and for both
+   together. A workflow `GITHUB_TOKEN` may *create* a Pages site (which is how this one came to
+   exist) but may never change its configuration, whatever `pages:` permission it is given. That
+   endpoint needs a user with admin access.
 
 So the source has to be set once by hand in the UI. After that no workflow is involved: GitHub
 rebuilds and serves the branch on every push, which is why `.nojekyll` is committed.
+
+**Watch the branch dropdown.** The site was created with its source branch recorded as
+`claude/repo-structure-pyq-pages-m5lcsu`, so that is what the UI may preselect when you switch to
+"Deploy from a branch". Change it to `main`.
+
+`.github/workflows/pages-status.yml` (Actions tab → *Pages status* → Run workflow) prints the live
+configuration if you need to check what state it is in. `"build_type": "workflow"` with
+`"status": null` is the state that serves the 404.
 
 If the club ever wants workflow-based deployment, the fix is to allow `id-token: write` for the
 organisation; the inlined-artifact workaround from point 1 is in this repo's history at `62a777a`.
