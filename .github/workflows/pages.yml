@@ -3,66 +3,99 @@ name: Pages
 on:
   push:
     branches: [main]
+  # So the site can be redeployed without an empty commit — useful after
+  # changing a Pages setting, or to recover from a failed deploy.
   workflow_dispatch:
 
-# Turns GitHub Pages on and points it at main / root — the same "deploy from a
-# branch" setup accelerate-muj/resources uses. Once the setting is in place
-# GitHub builds and serves the site on every push by itself; this workflow only
-# asserts the setting, which is idempotent and costs a few seconds.
-#
-# Why not the usual actions/deploy-pages flow: that action authenticates with an
-# OIDC token and so needs `id-token: write`, and this organisation does not
-# grant it. Every job that requested `id-token: write` failed at dispatch in one
-# second with no steps and no logs, while the identical job without it ran
-# fine — see runs #1–#3 of this workflow. Branch-based serving needs no OIDC.
-#
-# `pages: write` is the only elevated permission required. The org defaults
-# GITHUB_TOKEN to read-only (SETUP_LOG.md #35); declaring it here raises it for
-# this workflow alone.
+# Deploying from a workflow rather than the "deploy from a branch" setting,
+# which is how accelerate-muj/resources is published. Two reasons: the setting
+# can only be flipped by hand in the repository's settings, whereas this file
+# turns Pages on by itself via `enablement: true` below; and having the
+# deployment in the repository makes it reviewable and reproducible instead of
+# being invisible state somebody set once.
 permissions:
   contents: read
-  pages: write
 
+# One deployment at a time. `cancel-in-progress: false` so a run that is
+# already publishing is allowed to finish rather than leaving the site
+# half-updated — a queued run will redeploy straight after.
 concurrency:
   group: pages
   cancel-in-progress: false
 
+# Actions are pinned to full commit SHAs because the organisation enables
+# `sha_pinning_required` (SETUP_LOG.md #36/#55) — a movable tag like @v5 is
+# rejected before the run starts. The trailing comment records the tag.
+#
+# Split into build and deploy, matching GitHub's own starter workflow. Only the
+# deploy job binds the `github-pages` environment, so enabling Pages happens in
+# a job that is not itself gated on that environment existing.
+
 jobs:
-  configure:
-    name: Point Pages at main / root
+  build:
+    name: Build site artifact
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      pages: write
+
     steps:
-      # No checkout: this job only talks to the Pages API. The site content is
-      # served straight from the branch by GitHub.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # `enablement: true` creates the Pages site if the repository does not
+      # have one yet, so the first run of this workflow is what turns Pages on.
+      - name: Configure Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+        with:
+          enablement: true
+
+      # These two steps are actions/upload-pages-artifact@v3 inlined.
       #
-      # Values reach the shell through env rather than ${{ }} interpolation.
-      # None of these are attacker-controlled, but interpolating expressions
-      # into a run block is how campus-mapper got a shell-injection bug, and
-      # the habit is worth keeping.
-      - name: Enable Pages on main / root
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
+      # That action cannot be used here: it is a composite action whose last
+      # step is `uses: actions/upload-artifact@v4` — a movable tag, inside a
+      # file we do not control — and the org's sha_pinning_required rejects the
+      # whole run when it resolves that reference. Inlining is the only way to
+      # pin it. The tar flags below are copied verbatim from the action, so the
+      # artifact is byte-for-byte what deploy-pages expects.
+      #
+      # The whole repository root is the site. There is no build step — the
+      # pages are hand-written HTML and the archive is baked into pyq/data.js
+      # by build.js, which CI separately checks is in sync. .git and .github are
+      # excluded; everything else is public anyway.
+      - name: Archive the site
         run: |
-          set -euo pipefail
+          tar \
+            --dereference --hard-dereference \
+            --directory . \
+            -cf "$RUNNER_TEMP/artifact.tar" \
+            --exclude=.git \
+            --exclude=.github \
+            .
 
-          api="https://api.github.com/repos/$REPO/pages"
-          payload='{"source":{"branch":"main","path":"/"},"build_type":"legacy"}'
+      # The name must be exactly "github-pages" — that is the artifact
+      # deploy-pages looks for.
+      - name: Upload site
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: github-pages
+          path: ${{ runner.temp }}/artifact.tar
+          retention-days: 1
 
-          auth=(-H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json")
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
 
-          existing=$(curl -sS -o /dev/null -w '%{http_code}' "${auth[@]}" "$api")
+    permissions:
+      pages: write
+      id-token: write
 
-          if [ "$existing" = "404" ]; then
-            echo "Pages is not enabled yet — creating the site."
-            curl -fsS -X POST "${auth[@]}" -d "$payload" "$api" > /dev/null
-          else
-            echo "Pages already exists (HTTP $existing) — asserting the source."
-            curl -fsS -X PUT "${auth[@]}" -d "$payload" "$api" > /dev/null
-          fi
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
-          echo "::group::Pages configuration"
-          curl -fsS "${auth[@]}" "$api"
-          echo
-          echo "::endgroup::"
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
