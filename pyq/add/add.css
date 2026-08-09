@@ -494,3 +494,37 @@ select:hover {
     flex: 1 1 auto;
   }
 }
+
+/* --- The one thing not asked for up front ---------------------------------
+ * The exam year is filled in from the calendar rather than typed, because
+ * almost every paper is filed in the year it was sat. It is shown on the
+ * review step, editable, so the rare old paper is not silently mislabelled —
+ * which is the whole cost of not asking.
+ */
+
+.year-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  margin: -1rem 0 2rem;
+  font-size: 0.92rem;
+  color: var(--paper-dim);
+}
+
+.year-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.year-edit input {
+  width: 6rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.9rem;
+}

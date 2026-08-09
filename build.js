@@ -67,9 +67,15 @@ const banner = [
   '',
 ].join('\n');
 
+// A missing subjects.json is survivable — the picker falls back to the
+// subjects already present in the archive — so it warns rather than exits.
+const subjectsFile = readJson(PYQ.DATA_DIR + '/subjects.json');
+if (!subjectsFile) console.warn('No ' + PYQ.DATA_DIR + '/subjects.json — the subject picker will offer only what the archive already holds.');
+
 const payload = {
   catalogue: catalogue,
   collections: collections,
+  subjects: (subjectsFile && subjectsFile.subjects) || {},
 };
 
 const output = banner + 'window.PYQ_DATA = ' + JSON.stringify(payload, null, 2) + ';\n';

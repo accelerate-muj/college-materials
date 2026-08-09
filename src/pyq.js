@@ -213,6 +213,44 @@
     return (rootPrefix || '') + paper.file;
   }
 
+  /**
+   * The subjects a contributor can pick from for one collection.
+   *
+   * Two sources, merged: the curated list in data/pyq/subjects.json, and every
+   * subject already present in that collection's papers. The second half is
+   * what makes this work while the curated lists are still being filled in from
+   * the curriculum — a subject only ever has to be typed once, by whoever files
+   * the first paper for it, and it is offered to everyone after that.
+   *
+   * Matched on code where there is one, else on the lowercased name, so the
+   * same subject filed as "CS2001" and "cs2001" does not appear twice.
+   */
+  function subjectsFor(curated, papers) {
+    const seen = new Map();
+
+    function add(subject) {
+      if (!subject || !subject.name) return;
+      const key = subject.code ? String(subject.code).replace(/\s+/g, '').toUpperCase() : String(subject.name).trim().toLowerCase();
+      if (!key) return;
+      const existing = seen.get(key);
+      // A later entry may know the code where an earlier one did not.
+      if (existing) {
+        if (!existing.code && subject.code) existing.code = subject.code;
+        return;
+      }
+      seen.set(key, { name: String(subject.name).trim(), code: subject.code ? String(subject.code).replace(/\s+/g, '').toUpperCase() : null });
+    }
+
+    (curated || []).forEach(add);
+    (papers || []).forEach(function (paper) {
+      add({ name: paper.subject, code: paper.code });
+    });
+
+    return Array.from(seen.values()).sort(function (a, b) {
+      return a.name.localeCompare(b.name);
+    });
+  }
+
   return {
     DATA_DIR: DATA_DIR,
     COMMON_COLLECTION: COMMON_COLLECTION,
@@ -226,5 +264,6 @@
     sortPapers: sortPapers,
     groupBySubject: groupBySubject,
     paperHref: paperHref,
+    subjectsFor: subjectsFor,
   };
 });

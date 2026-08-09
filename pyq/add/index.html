@@ -71,47 +71,38 @@
         </div>
       </section>
 
-      <!-- Step 2 ------------------------------------------------------------>
+      <!-- Step 2 ------------------------------------------------------------
+           Deliberately two questions. Semester, the exam year, a notes box and
+           a handle field were all here and all removed: every one of them was a
+           thing standing between someone holding a paper and the archive
+           having it. Semester and the year come from the subject and the
+           calendar; attribution comes from the GitHub account that submits. -->
       <section class="step" id="step-details" hidden aria-labelledby="h-details">
         <h2 id="h-details">What is it?</h2>
 
         <div class="field">
-          <label for="subject">Subject <span class="req">required</span></label>
-          <input id="subject" type="text" maxlength="120" autocomplete="off" placeholder="Data Structures and Algorithms" required />
+          <label for="subject-pick">Subject <span class="req">required</span></label>
+          <select id="subject-pick" required></select>
+          <p class="hint" id="subject-hint"></p>
         </div>
 
-        <div class="row">
-          <div class="field">
-            <label for="code">Subject code</label>
-            <input id="code" type="text" autocomplete="off" placeholder="CS2001" />
-            <p class="hint">Groups every paper for this subject together. Worth finding.</p>
-          </div>
-          <div class="field">
-            <label for="semester">Semester</label>
-            <select id="semester"></select>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="field">
-            <label for="exam">Exam <span class="req">required</span></label>
-            <select id="exam" required></select>
-          </div>
-          <div class="field">
-            <label for="paper-year">Year sat <span class="req">required</span></label>
-            <input id="paper-year" type="number" inputmode="numeric" required />
+        <!-- Shown only when the subject is not in the list yet. Whatever is
+             typed here is offered to everyone after the paper is merged. -->
+        <div class="field" id="subject-other-field" hidden>
+          <label for="subject">Subject name <span class="req">required</span></label>
+          <input id="subject" type="text" maxlength="120" autocomplete="off" placeholder="Data Structures and Algorithms" />
+          <div class="row">
+            <div class="field">
+              <label for="code">Subject code</label>
+              <input id="code" type="text" autocomplete="off" placeholder="CS2001" />
+              <p class="hint">Worth finding — it is what groups a subject's papers together.</p>
+            </div>
           </div>
         </div>
 
         <div class="field">
-          <label for="contributor">Your GitHub handle</label>
-          <input id="contributor" type="text" autocomplete="off" placeholder="@yourname" />
-          <p class="hint">Optional, and it is how you get credit on the site.</p>
-        </div>
-
-        <div class="field">
-          <label for="notes">Anything a reader should know</label>
-          <input id="notes" type="text" maxlength="280" placeholder="Set A only; last page was missing." />
+          <label for="exam">Which exam <span class="req">required</span></label>
+          <select id="exam" required></select>
         </div>
 
         <p class="error" id="details-error" role="alert" hidden></p>
@@ -187,6 +178,14 @@
 
         <div class="summary" id="summary"></div>
 
+        <p class="year-note">
+          Filed as <strong id="year-display"></strong>.
+          <label class="year-edit">
+            Not this year?
+            <input id="paper-year" type="number" inputmode="numeric" aria-label="Year the exam was sat" />
+          </label>
+        </p>
+
         <ol class="submit-steps">
           <li>
             <h3>1 — Save the PDF</h3>
@@ -198,9 +197,11 @@
           <li id="handoff" class="dimmed">
             <h3>2 — Send it in</h3>
             <p>
-              Opens a pre-filled issue on GitHub, already signed in as you. <strong>Drag the PDF you
-              just saved into it</strong> and press submit — that is the whole job. A bot checks the
-              details, commits the paper and opens a pull request for a maintainer to review.
+              Opens a pre-filled issue on GitHub. <strong>You will be asked to sign in if you are
+              not already</strong> — that is how the paper gets credited to you, and there is
+              nothing else to fill in. <strong>Drag the PDF you just saved into it</strong> and
+              press submit. A bot checks the details, commits the paper and opens a pull request
+              for a maintainer to review.
             </p>
             <div class="actions">
               <a class="btn btn-primary" id="open-issue" href="#" target="_blank" rel="noopener" aria-disabled="true">Continue on GitHub</a>

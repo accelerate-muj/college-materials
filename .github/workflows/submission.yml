@@ -67,6 +67,7 @@ jobs:
         run: node .github/scripts/validate-data.js
 
       - name: Commit and open the pull request
+        id: publish
         if: steps.submission.outputs.status == 'ok'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -92,51 +93,102 @@ jobs:
             | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const a=JSON.parse(s);console.log(a.length?a[0].number:'')})")
 
           if [ -n "$existing" ]; then
+            echo "opened=$existing" >> "$GITHUB_OUTPUT"
             echo "Pull request #$existing already open for $BRANCH; the push updated it."
-          else
-            node -e '
-              const body = JSON.stringify({
-                title: process.env.PR_TITLE,
-                body: process.env.PR_BODY,
-                head: process.env.BRANCH,
-                base: process.env.BASE,
-              });
-              fetch("https://api.github.com/repos/" + process.env.REPO + "/pulls", {
-                method: "POST",
-                headers: {
-                  authorization: "Bearer " + process.env.GH_TOKEN,
-                  accept: "application/vnd.github+json",
-                  "content-type": "application/json",
-                },
-                body,
-              }).then(async (r) => {
-                const data = await r.json();
-                if (!r.ok) { console.error(data); process.exit(1); }
-                console.log("Opened pull request #" + data.number);
-              });
-            '
+            exit 0
           fi
 
-      - name: Reply on the issue
-        if: always() && steps.submission.outputs.comment != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          NUMBER: ${{ github.event.issue.number }}
-          COMMENT: ${{ steps.submission.outputs.comment }}
-        run: |
-          set -euo pipefail
-          node -e '
-            fetch("https://api.github.com/repos/" + process.env.REPO + "/issues/" + process.env.NUMBER + "/comments", {
+          # Creating the PR can be refused: the organisation has "Allow GitHub
+          # Actions to create and approve pull requests" turned off
+          # (SETUP_LOG.md #35), which answers 403 here. That is a deliberate
+          # policy, not a misconfiguration, so the bot degrades instead of
+          # failing — the branch is already pushed and the work is not lost.
+          # Turning the setting on makes this fully automatic with no code
+          # change.
+          set +e
+          response=$(node -e '
+            fetch("https://api.github.com/repos/" + process.env.REPO + "/pulls", {
               method: "POST",
               headers: {
                 authorization: "Bearer " + process.env.GH_TOKEN,
                 accept: "application/vnd.github+json",
                 "content-type": "application/json",
               },
-              body: JSON.stringify({ body: process.env.COMMENT }),
+              body: JSON.stringify({
+                title: process.env.PR_TITLE,
+                body: process.env.PR_BODY,
+                head: process.env.BRANCH,
+                base: process.env.BASE,
+              }),
+            }).then(async (r) => {
+              const data = await r.json();
+              if (r.ok) { console.log("ok:" + data.number); return; }
+              console.log((r.status === 403 ? "forbidden:" : "error:") + (data.message || r.status));
+            }).catch((e) => console.log("error:" + e.message));
+          ')
+          set -e
+
+          echo "$response"
+          case "$response" in
+            ok:*)        echo "opened=${response#ok:}" >> "$GITHUB_OUTPUT" ;;
+            forbidden:*) echo "opened=" >> "$GITHUB_OUTPUT" ;;
+            *)           echo "opened=" >> "$GITHUB_OUTPUT"
+                         echo "::warning::Could not open a pull request: $response" ;;
+          esac
+
+      # Says what actually happened. The previous version announced a pull
+      # request unconditionally, which was a lie on any run where creating one
+      # was refused.
+      - name: Reply on the issue
+        if: always() && steps.submission.outputs.comment != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+          BASE_COMMENT: ${{ steps.submission.outputs.comment }}
+          STATUS: ${{ steps.submission.outputs.status }}
+          OPENED: ${{ steps.publish.outputs.opened }}
+          BRANCH: ${{ steps.submission.outputs.branch }}
+          PR_TITLE: ${{ steps.submission.outputs.title }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          node -e '
+            const {
+              REPO, NUMBER, BASE_COMMENT, STATUS, OPENED, BRANCH, PR_TITLE, DEFAULT_BRANCH, GH_TOKEN,
+            } = process.env;
+
+            let body = BASE_COMMENT;
+
+            if (STATUS === "ok") {
+              if (OPENED) {
+                body = "Thanks! Committed and opened #" + OPENED +
+                  " — a maintainer will review it and merge. Nothing else needed from you.";
+              } else {
+                // The branch exists either way, so the compare link is one
+                // click from a pull request.
+                const compare = "https://github.com/" + REPO + "/compare/" +
+                  encodeURIComponent(DEFAULT_BRANCH) + "..." + encodeURIComponent(BRANCH) +
+                  "?expand=1&title=" + encodeURIComponent(PR_TITLE);
+                body = [
+                  "Thanks! Your paper is committed to `" + BRANCH + "`.",
+                  "",
+                  "**One click left:** [open the pull request](" + compare + "). This repository does not let",
+                  "Actions create pull requests, so the last step is manual — a maintainer can do it if you would rather.",
+                ].join("\n");
+              }
+            }
+
+            fetch("https://api.github.com/repos/" + REPO + "/issues/" + NUMBER + "/comments", {
+              method: "POST",
+              headers: {
+                authorization: "Bearer " + GH_TOKEN,
+                accept: "application/vnd.github+json",
+                "content-type": "application/json",
+              },
+              body: JSON.stringify({ body }),
             }).then(async (r) => {
               if (!r.ok) { console.error(await r.text()); process.exit(1); }
-              console.log("Commented on #" + process.env.NUMBER);
+              console.log("Commented on #" + NUMBER);
             });
           '

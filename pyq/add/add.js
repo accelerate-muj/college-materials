@@ -108,21 +108,59 @@
     $('branch-field').hidden = !year.branched;
     $('branch-hint').textContent = year.branched ? '' : '';
 
-    const semester = $('semester');
-    semester.textContent = '';
-    semester.appendChild(option('', 'Not sure'));
-    year.semesters.forEach(function (number) {
-      semester.appendChild(option(String(number), 'Semester ' + number));
+    syncSubjects();
+  }
+
+  /*
+   * The picker is the union of the curated catalogue for this collection and
+   * every subject already filed in it. The curated lists are still being copied
+   * out of the curriculum, so the second half is what makes this useful today:
+   * a subject is typed once, by whoever files the first paper for it, and is
+   * offered to everyone afterwards.
+   */
+  function syncSubjects() {
+    const year = currentYear();
+    const branch = currentBranch();
+    if (!year) return;
+
+    const key = PYQ.collectionKey(year.id, branch ? branch.id : null);
+    const curated = (DATA.subjects || {})[key] || [];
+    const filed = (DATA.collections || {})[key] || [];
+    const subjects = PYQ.subjectsFor(curated, filed);
+
+    const pick = $('subject-pick');
+    const previous = pick.value;
+    pick.textContent = '';
+    pick.appendChild(option('', subjects.length ? 'Choose a subject…' : 'No subjects listed yet'));
+
+    subjects.forEach(function (subject) {
+      pick.appendChild(option(subject.code || subject.name, subject.code ? subject.code + ' — ' + subject.name : subject.name));
     });
 
-    if (!year.branched) {
-      const note = document.createElement('p');
-      note.className = 'hint';
-      note.textContent = year.note || '';
-    }
+    pick.appendChild(option(OTHER, "It's not in this list"));
+    if (previous) pick.value = previous;
+
+    $('subject-hint').textContent = subjects.length
+      ? 'Not listed? Pick the last option and type it — it will be offered to everyone next time.'
+      : 'Nothing filed here yet. Choose the last option and type the subject.';
+
+    // Remember what each option means so the record can be rebuilt from it.
+    subjectIndex = subjects;
+    syncSubjectOther();
+  }
+
+  const OTHER = '__other__';
+  let subjectIndex = [];
+
+  function syncSubjectOther() {
+    const other = $('subject-pick').value === OTHER;
+    $('subject-other-field').hidden = !other;
+    if (other) $('subject').focus();
   }
 
   $('year').addEventListener('change', syncYear);
+  $('branch').addEventListener('change', syncSubjects);
+  $('subject-pick').addEventListener('change', syncSubjectOther);
 
   /*
    * The archive links here carrying whatever the reader was already looking at.
@@ -149,7 +187,12 @@
   const wantedBranch = catalogue.branches.find(function (branch) {
     return branch.id === params.get('branch');
   });
-  if (wantedBranch && wantedYear && wantedYear.branched) $('branch').value = wantedBranch.id;
+  if (wantedBranch && wantedYear && wantedYear.branched) {
+    $('branch').value = wantedBranch.id;
+    // syncYear() ran above with the default branch still selected, so the
+    // picker was built for the wrong collection. Rebuild it now.
+    syncSubjects();
+  }
 
   const wantedExam = catalogue.examTypes.find(function (type) {
     return type.id === params.get('exam');
@@ -157,14 +200,24 @@
   if (wantedExam) $('exam').value = wantedExam.id;
 
   const wantedSubject = (params.get('subject') || '').trim().slice(0, 120);
-  if (wantedSubject) $('subject').value = wantedSubject;
-
   const wantedCode = (params.get('code') || '').trim().toUpperCase().replace(/\s+/g, '').slice(0, 12);
-  if (wantedCode && /^[A-Z]{2,4}\d{3,4}$/.test(wantedCode)) $('code').value = wantedCode;
+  const codeOk = Boolean(wantedCode) && /^[A-Z]{2,4}\d{3,4}$/.test(wantedCode);
 
-  const wantedSemester = Number(params.get('semester'));
-  if (wantedYear && wantedYear.semesters.indexOf(wantedSemester) !== -1) {
-    $('semester').value = String(wantedSemester);
+  if (wantedSubject) {
+    // Prefer the catalogue entry, so the record picks up a code the link may
+    // not have carried. Fall back to the free-text field for a subject the
+    // archive has never seen.
+    const match = subjectIndex.find(function (subject) {
+      return (codeOk && subject.code === wantedCode) || subject.name.toLowerCase() === wantedSubject.toLowerCase();
+    });
+    if (match) {
+      $('subject-pick').value = match.code || match.name;
+    } else {
+      $('subject-pick').value = OTHER;
+      $('subject').value = wantedSubject;
+      if (codeOk) $('code').value = wantedCode;
+    }
+    syncSubjectOther();
   }
 
   /** True once the URL has fully answered "where does this paper go". */
@@ -278,6 +331,16 @@
 
   function validateStep(step) {
     if (step === 'details') {
+      const picked = $('subject-pick').value;
+      if (!picked) {
+        showError('details-error', 'Pick a subject, or choose the last option and type it.');
+        return false;
+      }
+      if (picked === OTHER && !$('subject').value.trim()) {
+        showError('details-error', 'Type the subject name.');
+        return false;
+      }
+
       const paper = buildPaper();
       const errors = PYQ.validatePaper(Object.assign({}, paper, { file: 'papers/x.pdf' }), {
         catalogue: catalogue,
@@ -330,24 +393,30 @@
     return slug(parts.join('-'));
   }
 
+  /**
+   * The record, from as few answers as possible.
+   *
+   * No contributor field: the bot credits whoever opens the issue, which is
+   * more reliable than a typed handle and one less thing to fill in. No
+   * semester and no notes — both were optional and neither earned its place in
+   * front of someone holding a paper. The year defaults to now and is
+   * corrigible on the review step.
+   */
   function buildPaper() {
+    const picked = $('subject-pick').value;
+    const custom = picked === OTHER || !picked;
+    const entry = custom ? null : subjectIndex.find(function (subject) {
+      return (subject.code || subject.name) === picked;
+    });
+
     const paper = {
-      subject: $('subject').value.trim(),
+      subject: entry ? entry.name : $('subject').value.trim(),
       exam: $('exam').value,
-      year: Number($('paper-year').value),
+      year: Number($('paper-year').value) || new Date().getFullYear(),
     };
 
-    const code = $('code').value.trim().toUpperCase().replace(/\s+/g, '');
+    const code = entry ? entry.code : $('code').value.trim().toUpperCase().replace(/\s+/g, '');
     if (code) paper.code = code;
-
-    const semester = $('semester').value;
-    if (semester) paper.semester = Number(semester);
-
-    const contributor = $('contributor').value.trim();
-    if (contributor) paper.contributor = contributor.startsWith('@') ? contributor : '@' + contributor;
-
-    const notes = $('notes').value.trim();
-    if (notes) paper.notes = notes;
 
     paper.id = buildId(paper);
     return paper;
@@ -611,7 +680,7 @@
     const rows = [
       ['Subject', submission.paper.subject],
       ['Code', submission.paper.code || '—'],
-      ['Exam', submission.paper.exam + ' ' + submission.paper.year],
+      ['Exam', submission.paper.exam],
       ['Year', submission.yearName],
       ['Branch', submission.branchName || 'Common to all branches'],
       ['Pages', state.existingPdf ? state.existingPdf.name : state.pages.length + ' scanned'],
@@ -629,6 +698,8 @@
 
     $('summary').textContent = '';
     $('summary').appendChild(dl);
+
+    $('year-display').textContent = submission.paper.exam + ' ' + submission.paper.year;
 
     // The do-it-yourself route needs the same paths the workflow would use.
     const resolved = {
@@ -708,6 +779,12 @@
     } finally {
       button.disabled = false;
     }
+  });
+
+  // Changing the year changes the record id and so the filename; re-derive
+  // rather than leaving the summary and the download disagreeing.
+  $('paper-year').addEventListener('change', function () {
+    if (state.step === 'submit') renderSummary();
   });
 
   $('diy-link').href = 'https://github.com/' + REPO;
