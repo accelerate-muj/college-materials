@@ -171,7 +171,19 @@ window.PYQ_DATA = {
     ]
   },
   "collections": {
-    "first-year/common": [],
+    "first-year/common": [
+      {
+        "subject": "hhhh",
+        "exam": "MTE",
+        "year": 2026,
+        "code": "CS2001",
+        "semester": 2,
+        "contributor": "@theqmlguy",
+        "notes": "jjj",
+        "id": "fy-2026-mte-cs2001",
+        "file": "papers/first-year/fy-2026-mte-cs2001.pdf"
+      }
+    ],
     "second-year/cse": [],
     "second-year/cse-aiml": [],
     "second-year/cse-data-science": [],
