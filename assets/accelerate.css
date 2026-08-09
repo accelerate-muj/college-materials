@@ -1,0 +1,181 @@
+/*
+ * THE ACCELERATE DESIGN SYSTEM
+ * ============================
+ *
+ * Canonical source: accelerate-muj/college-materials/assets/accelerate.css
+ *
+ * This file is the *system* — tokens, the three type voices, focus, motion and
+ * the shared motifs. It contains nothing specific to any one project; a repo's
+ * own stylesheet holds its components and layers on top.
+ *
+ * ## Using it in another repo
+ *
+ * Copy this file, `assets/fonts/` and `assets/brand/`, then link them ahead of
+ * your own stylesheet:
+ *
+ *     <link rel="stylesheet" href="assets/fonts/fonts.css" />
+ *     <link rel="stylesheet" href="assets/accelerate.css" />
+ *     <link rel="stylesheet" href="style.css" />
+ *
+ * It is a copy rather than a shared URL on purpose. Loading it from another
+ * origin would make every club site depend on one Pages deployment staying up,
+ * and would break opening a page over file:// — which campus-mapper in
+ * particular is built around. The cost is that copies can drift, so when you
+ * change the system, change it here first and re-copy.
+ *
+ * ## Rules that are part of the system, not decoration
+ *
+ *   - Every colour resolves through a token. No raw hex below the token block.
+ *   - Crimson is a spotlight, not a fill. One accent per view.
+ *   - Contrast is measured, not eyeballed. Every pair below is annotated, and
+ *     all clear WCAG 2.1 AA — which Article III.2 of the Constitution requires.
+ *     If you change a colour, measure it again and update the comment.
+ *   - Focus is always visible.
+ *
+ * DESIGN.md in college-materials explains the reasoning behind all of it.
+ */
+
+:root {
+  /* The identity is dark. A washed-out white version reads as a different
+   * project. Declaring the scheme keeps form controls and scrollbars in step.
+   * A project that genuinely needs a light mode (campus-mapper has one, with a
+   * toggle) should override these tokens under its own selector rather than
+   * dropping the system. */
+  color-scheme: dark;
+
+  --ink: #0a0a0a; /* page */
+  --ink-raised: #131317; /* cards, chips */
+  --ink-hover: #1b1b21;
+  --paper: #ffffff; /* 19.8:1 on --ink */
+  --paper-dim: #9ca0a6; /* 7.5:1 on --ink */
+  --flare: #ee3b44; /* 5.0:1 on --ink */
+  --flare-bright: #ff5c63; /* 6.6:1 on --ink */
+  --hairline: rgba(255, 255, 255, 0.14);
+  --hairline-strong: rgba(255, 255, 255, 0.28);
+
+  /* Three voices, and the rule is about who is speaking:
+   *   display — Anton, uppercase. Headings and the loud bits.
+   *   body    — Space Grotesk. Anything a person wrote for a person.
+   *   mono    — JetBrains Mono. Anything the interface quotes from a file, a
+   *             path or a shell. This is the one that carries the identity. */
+  --font-display: "Anton", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --font-body: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --radius: 0.35rem;
+  --measure: 72rem;
+}
+
+/* --- The starfield --------------------------------------------------------
+ * Gradients rather than an image: a handful of dots at low opacity plus one
+ * wide crimson bloom, fixed so it sits behind the content instead of scrolling
+ * with it. No network request, no <img>, nothing to describe to a screen
+ * reader. Apply with `class="accelerate-field"` on <body>.
+ */
+
+.accelerate-field {
+  background-color: var(--ink);
+  background-image: radial-gradient(1px 1px at 12% 18%, rgba(255, 255, 255, 0.5), transparent 100%),
+    radial-gradient(1px 1px at 78% 12%, rgba(255, 255, 255, 0.35), transparent 100%),
+    radial-gradient(1.5px 1.5px at 44% 32%, rgba(255, 255, 255, 0.25), transparent 100%),
+    radial-gradient(1px 1px at 88% 54%, rgba(255, 255, 255, 0.4), transparent 100%),
+    radial-gradient(1px 1px at 22% 68%, rgba(255, 255, 255, 0.3), transparent 100%),
+    radial-gradient(1px 1px at 62% 84%, rgba(255, 255, 255, 0.35), transparent 100%),
+    radial-gradient(1.5px 1.5px at 8% 92%, rgba(255, 255, 255, 0.2), transparent 100%),
+    radial-gradient(900px 500px at 78% 6%, rgba(238, 59, 68, 0.07), transparent 70%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+/* --- Focus ----------------------------------------------------------------
+ * Never remove this. The only defensible exception is an element with
+ * tabindex="-1" that exists purely as a programmatic focus target.
+ */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid var(--flare-bright);
+  outline-offset: 3px;
+}
+
+/* --- Motifs ---------------------------------------------------------------
+ * Four, all cheap, all optional. Use them sparingly.
+ */
+
+/* The sentence turns crimson at the point it makes a claim. */
+.accent {
+  color: var(--flare);
+}
+
+/*
+ * A shell prompt as an eyebrow above a heading. The "$ " is generated rather
+ * than written into the markup, so a screen reader reads the label and not the
+ * prompt character. Write something that is plausibly the command that got you
+ * to this screen.
+ */
+.prompt {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--paper-dim);
+  letter-spacing: 0.01em;
+  margin: 0 0 0.9rem;
+}
+
+.prompt::before {
+  content: "$ ";
+  color: var(--flare);
+}
+
+/* The poster's flight path, flattened to a divider with one lit node. One per
+ * page at most — it marks the break between the pitch and the content. */
+.trajectory {
+  position: relative;
+  height: 1px;
+  border: 0;
+  margin: 3rem 0;
+  background: linear-gradient(90deg, transparent, var(--hairline-strong) 12%, var(--hairline-strong) 88%, transparent);
+}
+
+.trajectory::after {
+  content: "";
+  position: absolute;
+  right: 12%;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: var(--flare);
+  box-shadow: 0 0 0 4px rgba(238, 59, 68, 0.18), 0 0 22px 6px rgba(238, 59, 68, 0.35);
+}
+
+/*
+ * The logo lockup. It *is* the wordmark, so it takes alt="Accelerate" and no
+ * text sits beside it. Sized by height, width left to the 1.92:1 aspect; keep
+ * the intrinsic width/height attributes on the <img> so the header does not
+ * jump as it loads. Wants roughly this size — the script occupies only the
+ * lower right, so at a typical 40px logo height it stops being readable.
+ */
+.site-logo {
+  display: block;
+  width: auto;
+  height: 3.25rem;
+}
+
+/* --- Motion --------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
