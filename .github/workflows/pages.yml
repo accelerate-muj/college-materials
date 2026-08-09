@@ -52,13 +52,37 @@ jobs:
         with:
           enablement: true
 
+      # These two steps are actions/upload-pages-artifact@v3 inlined.
+      #
+      # That action cannot be used here: it is a composite action whose last
+      # step is `uses: actions/upload-artifact@v4` — a movable tag, inside a
+      # file we do not control — and the org's sha_pinning_required rejects the
+      # whole run when it resolves that reference. Inlining is the only way to
+      # pin it. The tar flags below are copied verbatim from the action, so the
+      # artifact is byte-for-byte what deploy-pages expects.
+      #
       # The whole repository root is the site. There is no build step — the
       # pages are hand-written HTML and the archive is baked into pyq/data.js
-      # by build.js, which CI separately checks is in sync.
+      # by build.js, which CI separately checks is in sync. .git and .github are
+      # excluded; everything else is public anyway.
+      - name: Archive the site
+        run: |
+          tar \
+            --dereference --hard-dereference \
+            --directory . \
+            -cf "$RUNNER_TEMP/artifact.tar" \
+            --exclude=.git \
+            --exclude=.github \
+            .
+
+      # The name must be exactly "github-pages" — that is the artifact
+      # deploy-pages looks for.
       - name: Upload site
-        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          path: .
+          name: github-pages
+          path: ${{ runner.temp }}/artifact.tar
+          retention-days: 1
 
       - name: Deploy
         id: deployment
