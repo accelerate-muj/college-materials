@@ -61,16 +61,6 @@ body {
   left: 0;
 }
 
-/*
- * <main> carries tabindex="-1" so app.js can move focus to it after a hash
- * navigation — without that, a screen reader never announces the new screen.
- * It is not a Tab stop and the user did not choose to focus it, so a ring
- * around the whole page would be noise rather than a cue.
- */
-main[tabindex="-1"]:focus {
-  outline: none;
-}
-
 /* --- Header --------------------------------------------------------------- */
 
 .site-header {
@@ -397,6 +387,97 @@ code {
 
 .paper-year {
   color: var(--paper-dim);
+}
+
+/* --- Quick-add chips on a subject card ------------------------------------
+ * Outlined, not filled, so they read as secondary to the papers above them —
+ * these are an offer, and the papers are what the reader came for.
+ */
+
+.subject-add {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed var(--hairline);
+}
+
+.subject-add-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+}
+
+.add-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  border: 1px dashed var(--hairline-strong);
+  border-radius: 2rem;
+  text-decoration: none;
+  color: var(--paper-dim);
+}
+
+.add-chip::before {
+  content: "+";
+  color: var(--flare);
+  font-weight: 700;
+}
+
+.add-chip:hover {
+  border-style: solid;
+  border-color: var(--flare);
+  color: var(--paper);
+}
+
+/* --- Prefilled context bar in the scanner ---------------------------------
+ * Shows the decisions the incoming link made, each undoable. It sits in
+ * college-materials' stylesheet rather than the shared system because it is
+ * specific to this flow.
+ */
+
+.context {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.5rem;
+  margin: 0 0 2rem;
+  padding: 0.7rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  background: var(--ink-raised);
+  border: 1px solid var(--hairline);
+  border-left: 2px solid var(--flare);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--paper-dim);
+  max-width: none;
+}
+
+.context-value {
+  color: var(--paper);
+}
+
+.context-change {
+  padding: 0.1rem 0.5rem;
+  font: inherit;
+  font-size: 0.72rem;
+  color: var(--flare);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2rem;
+  cursor: pointer;
+}
+
+.context-change:hover {
+  border-color: var(--flare);
+  color: var(--flare-bright);
 }
 
 /* --- Empty state ---------------------------------------------------------- */
