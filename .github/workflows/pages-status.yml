@@ -1,74 +1,51 @@
 name: Pages status
 
-# Reports the repository's GitHub Pages configuration and, with attempt_fix,
-# tries to switch it to branch-based serving from main / root.
+# Read-only diagnostic: prints the repository's GitHub Pages configuration so
+# the source, build type and last build status can be checked without guessing.
+# Run it from the Actions tab. It deploys nothing and changes nothing.
 #
-# Pages here was created with build_type "workflow", which means the source
-# branch is ignored and nothing is served until a workflow deployment succeeds
-# — and deployment cannot succeed under this org's settings (see README,
-# "Enabling Pages"). Switching build_type to "legacy" is the fix; whether a
-# workflow token is allowed to do that is what attempt_fix answers.
-#
-# Run it from the Actions tab.
+# It cannot change anything: PUT /repos/{owner}/{repo}/pages answers
+# "Resource not accessible by integration" (403) to a workflow GITHUB_TOKEN
+# regardless of `pages: write`, for every combination of `source` and
+# `build_type`. Changing the Pages source needs a user with admin access, in
+# the settings UI. See README.md, "Enabling Pages".
 
 on:
   workflow_dispatch:
-    inputs:
-      attempt_fix:
-        description: "Try to switch Pages to main / root (otherwise report only)"
-        type: boolean
-        default: false
 
 permissions:
   contents: read
-  pages: write
+  pages: read
 
 jobs:
   status:
     name: Report Pages configuration
     runs-on: ubuntu-latest
     steps:
-      - name: Read, and optionally reconfigure, Pages
+      - name: Read the Pages API
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          ATTEMPT_FIX: ${{ inputs.attempt_fix }}
         run: |
           set -uo pipefail
+          code=$(curl -sS -o /tmp/pages.json -w '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/pages")
 
-          api="https://api.github.com/repos/$REPO/pages"
-          auth=(-H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json")
-
-          echo "::group::Current configuration"
-          curl -sS "${auth[@]}" "$api"
-          echo
-          echo "::endgroup::"
-
-          if [ "$ATTEMPT_FIX" != "true" ]; then
-            echo "Report only. Re-run with attempt_fix to try switching the source."
+          echo "HTTP $code"
+          if [ "$code" = "404" ]; then
+            echo "No Pages site exists for this repository."
             exit 0
           fi
 
-          # Several shapes, because the API is picky about which fields may be
-          # changed together and the failure mode is an opaque 403 either way.
-          # Printing each body is the point of this run.
-          try() {
-            echo "::group::PUT $1"
-            code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X PUT "${auth[@]}" -d "$2" "$api")
-            echo "HTTP $code"
-            cat /tmp/out.json 2>/dev/null || true
-            echo
-            echo "::endgroup::"
-            [ "$code" = "204" ] && return 0 || return 1
-          }
+          cat /tmp/pages.json
+          echo
 
-          if try "build_type + source" '{"build_type":"legacy","source":{"branch":"main","path":"/"}}' \
-            || try "source only" '{"source":{"branch":"main","path":"/"}}' \
-            || try "build_type only" '{"build_type":"legacy"}'; then
-            echo "Switched. Final configuration:"
-            curl -sS "${auth[@]}" "$api"
-            echo
-          else
-            echo "::warning::Could not change the Pages source from a workflow. Set it by hand: Settings -> Pages -> Source -> Deploy from a branch -> main / (root)."
-            exit 1
+          # "build_type": "workflow" with "status": null is the state that
+          # serves a 404 — Pages exists but nothing has ever been published to
+          # it, and the source branch is ignored while the build type is
+          # "workflow". Branch serving is what this repository wants.
+          if grep -q '"build_type": *"workflow"' /tmp/pages.json; then
+            echo "::warning::build_type is 'workflow'. This repository serves from a branch — set Settings > Pages > Source to 'Deploy from a branch', main / (root)."
           fi
