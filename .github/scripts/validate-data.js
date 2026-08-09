@@ -43,32 +43,47 @@ if (!catalogue) {
 
 /* --- The catalogue itself, before anything that depends on it ------------ */
 
-const yearIds = new Set();
-(catalogue.years || []).forEach(function (year) {
-  if (yearIds.has(year.id)) errors.push(cataloguePath + ': duplicate year id "' + year.id + '"');
-  yearIds.add(year.id);
-});
+const programmeIds = new Set();
+const groupIds = new Set((catalogue.programmeGroups || []).map((group) => group.id));
 
-const branchIds = new Set();
-const groupIds = new Set((catalogue.branchGroups || []).map((group) => group.id));
-(catalogue.branches || []).forEach(function (branch) {
-  if (branchIds.has(branch.id)) errors.push(cataloguePath + ': duplicate branch id "' + branch.id + '"');
-  branchIds.add(branch.id);
+(catalogue.programmes || []).forEach(function (programme) {
+  if (programmeIds.has(programme.id)) errors.push(cataloguePath + ': duplicate programme id "' + programme.id + '"');
+  programmeIds.add(programme.id);
 
-  if (!groupIds.has(branch.group)) {
-    errors.push(cataloguePath + ': branch "' + branch.id + '" references unknown group "' + branch.group + '"');
+  if (!groupIds.has(programme.group)) {
+    errors.push(cataloguePath + ': programme "' + programme.id + '" references unknown group "' + programme.group + '"');
   }
+  if (!(programme.years >= 1 && programme.years <= 6)) {
+    errors.push(cataloguePath + ': programme "' + programme.id + '" has an implausible length of ' + programme.years + ' years');
+  }
+
+  const branchIds = new Set();
+  (programme.branches || []).forEach(function (branch) {
+    if (branchIds.has(branch.id)) errors.push(cataloguePath + ': ' + programme.id + ' has duplicate branch "' + branch.id + '"');
+    branchIds.add(branch.id);
+  });
+
+  // A common year that the programme does not run is a typo that silently
+  // changes nothing, which is the kind that survives review.
+  (programme.commonYears || []).forEach(function (year) {
+    if (year < 1 || year > programme.years) {
+      errors.push(cataloguePath + ': ' + programme.id + ' lists commonYear ' + year + ' outside its ' + programme.years + ' years');
+    }
+  });
 });
 
+if (programmeIds.size === 0) errors.push(cataloguePath + ': no programmes defined');
+
+const branchIds = new Set(['placeholder']);
 if (branchIds.size === 0) errors.push(cataloguePath + ': no branches defined');
 
 /* --- Every paper collection the catalogue implies ------------------------ */
 
 const expected = PYQ.expectedCollections(catalogue);
-const expectedPaths = new Set(expected.map((collection) => PYQ.collectionPath(collection.yearId, collection.branchId)));
+const expectedPaths = new Set(expected.map((collection) => PYQ.collectionPath(collection.programmeId, collection.year, collection.branchId)));
 
 expected.forEach(function (collection) {
-  const relativePath = PYQ.collectionPath(collection.yearId, collection.branchId);
+  const relativePath = PYQ.collectionPath(collection.programmeId, collection.year, collection.branchId);
   if (!fs.existsSync(path.join(REPO_ROOT, relativePath))) return; // not yet contributed to
 
   const papers = readJson(relativePath);
@@ -79,7 +94,7 @@ expected.forEach(function (collection) {
     return;
   }
 
-  const year = catalogue.years.find((candidate) => candidate.id === collection.yearId);
+  const year = collection.year;
 
   papers.forEach(function (paper, index) {
     papersChecked += 1;

@@ -90,7 +90,7 @@ const submission = parsed.submission;
 function existingIds() {
   const ids = new Set();
   PYQ.expectedCollections(catalogue).forEach(function (collection) {
-    const relativePath = PYQ.collectionPath(collection.yearId, collection.branchId);
+    const relativePath = PYQ.collectionPath(collection.programmeId, collection.year, collection.branchId);
     const absolute = path.join(REPO_ROOT, relativePath);
     if (!fs.existsSync(absolute)) return;
     JSON.parse(fs.readFileSync(absolute, 'utf8')).forEach(function (paper) {
@@ -166,7 +166,11 @@ async function main() {
   const record = Object.assign({}, submission.paper, { file: filePath });
   if (!record.contributor && issueAuthor) record.contributor = '@' + issueAuthor;
 
-  const collectionPath = PYQ.collectionPath(submission.year.id, submission.branch ? submission.branch.id : null);
+  const collectionPath = PYQ.collectionPath(
+    submission.programme.id,
+    submission.year,
+    submission.branch ? submission.branch.id : null
+  );
   const collectionAbsolute = path.join(REPO_ROOT, collectionPath);
 
   const papers = fs.existsSync(collectionAbsolute) ? JSON.parse(fs.readFileSync(collectionAbsolute, 'utf8')) : [];
@@ -175,7 +179,9 @@ async function main() {
   fs.mkdirSync(path.dirname(collectionAbsolute), { recursive: true });
   fs.writeFileSync(collectionAbsolute, JSON.stringify(PYQ.sortPapers(papers), null, 2) + '\n');
 
-  const where = submission.branch ? submission.branch.short + ' ' + submission.year.name : submission.year.name;
+  const place = [submission.programme.short, PYQ.yearName(submission.year)];
+  if (submission.branch) place.push(submission.branch.short);
+  const where = place.join(' ');
 
   setOutput('status', 'ok');
   setOutput('branch', Submission.branchName(submission));

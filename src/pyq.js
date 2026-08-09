@@ -56,30 +56,106 @@
   }
 
   /**
-   * The storage key for one collection of papers: "second-year/cse", or
-   * "first-year/common" for an unbranched year. Also the path under data/pyq,
-   * minus the .json — one concept, so it is derived in one place.
+   * The storage key for one collection of papers:
+   *
+   *   btech/year-3/cse-aiml     a branched year of a branched programme
+   *   bba/year-1/common         a programme with no specialisations
+   *   btech/year-1/common       B.Tech's common first year
+   *
+   * Also the path under data/pyq, minus the .json — one concept, derived once.
+   *
+   * Three levels rather than two: the archive covers every MUJ programme, not
+   * only B.Tech, and "third year CSE" means nothing without knowing which
+   * degree it belongs to.
    */
-  function collectionKey(yearId, branchId) {
-    return yearId + '/' + (branchId || COMMON_COLLECTION);
+  function collectionKey(programmeId, yearNumber, branchId) {
+    return programmeId + '/' + yearId(yearNumber) + '/' + (branchId || COMMON_COLLECTION);
   }
 
-  function collectionPath(yearId, branchId) {
-    return DATA_DIR + '/' + collectionKey(yearId, branchId) + '.json';
+  function collectionPath(programmeId, yearNumber, branchId) {
+    return DATA_DIR + '/' + collectionKey(programmeId, yearNumber, branchId) + '.json';
+  }
+
+  function yearId(yearNumber) {
+    return 'year-' + yearNumber;
+  }
+
+  /** The inverse: "year-3" → 3, anything else → null. */
+  function parseYearId(value) {
+    const match = /^year-([1-9]\d?)$/.exec(String(value || ''));
+    return match ? Number(match[1]) : null;
+  }
+
+  /** "Third year". Degrees run to five years here, so no hardcoded list. */
+  const ORDINALS = ['', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'];
+
+  function yearName(yearNumber) {
+    return (ORDINALS[yearNumber] || 'Year ' + yearNumber) + ' Year';
+  }
+
+  /**
+   * Year N covers semesters 2N-1 and 2N. True of every programme here, so it
+   * is derived rather than listed — one less thing to get out of step.
+   */
+  function semestersFor(yearNumber) {
+    return [yearNumber * 2 - 1, yearNumber * 2];
+  }
+
+  /** Does this year of this programme split by specialisation? */
+  function isBranched(programme, yearNumber) {
+    if (!programme.branches || programme.branches.length === 0) return false;
+    return (programme.commonYears || []).indexOf(yearNumber) === -1;
+  }
+
+  function findProgramme(catalogue, programmeId) {
+    return (catalogue.programmes || []).find(function (programme) {
+      return programme.id === programmeId;
+    });
+  }
+
+  function findBranch(programme, branchId) {
+    return ((programme && programme.branches) || []).find(function (branch) {
+      return branch.id === branchId;
+    });
+  }
+
+  /** Parses "btech/year-3/cse-aiml" back into its parts, or null. */
+  function parseCollectionKey(key) {
+    const match = /^([a-z0-9-]+)\/year-(\d+)\/([a-z0-9-]+)$/.exec(String(key || ''));
+    if (!match) return null;
+    return {
+      programmeId: match[1],
+      year: Number(match[2]),
+      branchId: match[3] === COMMON_COLLECTION ? null : match[3],
+    };
   }
 
   /** Every collection the catalogue implies, whether or not a file exists yet. */
   function expectedCollections(catalogue) {
     const collections = [];
-    catalogue.years.forEach(function (year) {
-      if (!year.branched) {
-        collections.push({ yearId: year.id, branchId: null, key: collectionKey(year.id, null) });
-        return;
+
+    (catalogue.programmes || []).forEach(function (programme) {
+      for (let year = 1; year <= programme.years; year += 1) {
+        if (!isBranched(programme, year)) {
+          collections.push({
+            programmeId: programme.id,
+            year: year,
+            branchId: null,
+            key: collectionKey(programme.id, year, null),
+          });
+          continue;
+        }
+        programme.branches.forEach(function (branch) {
+          collections.push({
+            programmeId: programme.id,
+            year: year,
+            branchId: branch.id,
+            key: collectionKey(programme.id, year, branch.id),
+          });
+        });
       }
-      catalogue.branches.forEach(function (branch) {
-        collections.push({ yearId: year.id, branchId: branch.id, key: collectionKey(year.id, branch.id) });
-      });
     });
+
     return collections;
   }
 
@@ -142,8 +218,11 @@
     if (paper.semester !== undefined) {
       if (!isInteger(paper.semester)) {
         errors.push('semester must be a whole number');
-      } else if (year && year.semesters && year.semesters.indexOf(paper.semester) === -1) {
-        errors.push('semester ' + paper.semester + ' is not part of ' + year.name + ' (expected ' + year.semesters.join(' or ') + ')');
+      } else if (year) {
+        const allowed = semestersFor(year);
+        if (allowed.indexOf(paper.semester) === -1) {
+          errors.push('semester ' + paper.semester + ' is not part of ' + yearName(year) + ' (expected ' + allowed.join(' or ') + ')');
+        }
       }
     }
 
@@ -259,7 +338,15 @@
     REQUIRED_FIELDS: REQUIRED_FIELDS,
     collectionKey: collectionKey,
     collectionPath: collectionPath,
+    parseCollectionKey: parseCollectionKey,
     expectedCollections: expectedCollections,
+    yearId: yearId,
+    parseYearId: parseYearId,
+    yearName: yearName,
+    semestersFor: semestersFor,
+    isBranched: isBranched,
+    findProgramme: findProgramme,
+    findBranch: findBranch,
     validatePaper: validatePaper,
     sortPapers: sortPapers,
     groupBySubject: groupBySubject,

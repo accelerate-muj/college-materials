@@ -41,6 +41,7 @@
    */
   function buildBody(submission) {
     const payload = {
+      programme: submission.programme,
       year: submission.year,
       branch: submission.branch || null,
       paper: submission.paper,
@@ -57,8 +58,9 @@
       '| **Subject** | ' + escapeCell(submission.paper.subject) + ' |',
       '| **Code** | ' + escapeCell(submission.paper.code || '—') + ' |',
       '| **Exam** | ' + escapeCell(submission.paper.exam) + ' ' + escapeCell(submission.paper.year) + ' |',
-      '| **Year** | ' + escapeCell(submission.yearName || submission.year) + ' |',
-      '| **Branch** | ' + escapeCell(submission.branchName || submission.branch || 'Common to all branches') + ' |',
+      '| **Programme** | ' + escapeCell(submission.programmeName || submission.programme) + ' |',
+      '| **Year** | ' + escapeCell(submission.yearName || ('Year ' + submission.year)) + ' |',
+      '| **Branch** | ' + escapeCell(submission.branchName || submission.branch || 'Not split by specialisation') + ' |',
       '',
       '---',
       '',
@@ -140,21 +142,25 @@
       return { ok: false, errors: ['The submission block is not an object.'] };
     }
 
-    const catalogue = (context && context.catalogue) || { years: [], branches: [], examTypes: [] };
+    const catalogue = (context && context.catalogue) || { programmes: [], examTypes: [] };
 
-    const year = catalogue.years.find(function (candidate) {
-      return candidate.id === payload.year;
-    });
-    if (!year) errors.push('Unknown year "' + payload.year + '".');
+    const programme = PYQ.findProgramme(catalogue, payload.programme);
+    if (!programme) {
+      return { ok: false, errors: ['Unknown programme "' + payload.programme + '".'] };
+    }
+
+    const year = Number(payload.year);
+    if (!Number.isInteger(year) || year < 1 || year > programme.years) {
+      errors.push('Year ' + payload.year + ' is not part of ' + programme.short + ', which runs ' + programme.years + ' years.');
+    }
 
     let branch = null;
-    if (year && year.branched) {
-      branch = catalogue.branches.find(function (candidate) {
-        return candidate.id === payload.branch;
-      });
-      if (!branch) errors.push('Unknown branch "' + payload.branch + '" for ' + year.name + '.');
-    } else if (year && payload.branch) {
-      errors.push(year.name + ' is common to every branch, so it takes no branch.');
+    const branched = Number.isInteger(year) && PYQ.isBranched(programme, year);
+    if (branched) {
+      branch = PYQ.findBranch(programme, payload.branch);
+      if (!branch) errors.push('Unknown ' + programme.short + ' specialisation "' + payload.branch + '".');
+    } else if (payload.branch) {
+      errors.push(programme.short + ' year ' + payload.year + ' is not split by specialisation, so it takes no branch.');
     }
 
     const paper = payload.paper;
@@ -182,7 +188,7 @@
 
     return {
       ok: true,
-      submission: { year: year, branch: branch, paper: paper },
+      submission: { programme: programme, year: year, branch: branch, paper: paper },
     };
   }
 
@@ -227,7 +233,7 @@
    */
   function filePath(submission) {
     const safeId = String(submission.paper.id).replace(/[^a-z0-9-]/g, '');
-    const parts = ['papers', submission.year.id];
+    const parts = ['papers', String(submission.programme.id).replace(/[^a-z0-9-]/g, ''), PYQ.yearId(submission.year)];
     if (submission.branch) parts.push(submission.branch.id);
     parts.push(safeId + '.pdf');
     return parts.join('/');

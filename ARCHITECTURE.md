@@ -28,7 +28,7 @@ Almost everything below is downstream of it.
 |---|---|
 | No bundler, no `package.json` | Every file loads as a plain `<script>`, so `file://` keeps working |
 | Data is baked into `pyq/data.js` | `fetch()` on a local JSON file is blocked by CORS under `file://`. A `<script>` is not. |
-| Hash routing, not paths | `#/second-year/cse` resolves with no server and no rewrite rules |
+| Hash routing, not paths | `#/btech/year-3/cse-aiml` resolves with no server and no rewrite rules |
 | UMD-ish module wrapper in `src/pyq.js` | The same file has to work under `require()` in Node and as a `<script>` in a browser |
 
 The cost is a generated file (`pyq/data.js`) that must be committed and can go stale. CI checks it
@@ -70,21 +70,34 @@ contributor fixing one error per CI round is a contributor who gives up on round
 
 ## Why the catalogue is data, not code
 
-Years, branches and exam types live in `data/pyq/catalogue.json`, not in the JavaScript. Adding a
-section is then a JSON edit that a non-programmer can make and review, and it stays a JSON edit
-whether the club adds one branch or replaces the whole list when the University restructures its
-programmes.
+Programmes, their durations, their specialisations and the exam types live in
+`data/pyq/catalogue.json`, not in the JavaScript. Adding a programme is then a JSON edit that a
+non-programmer can make and review, and it stays a JSON edit whether the club adds one
+specialisation or replaces the whole list when the University restructures its faculties.
 
-It also means the branch list has exactly one definition. `expectedCollections()` derives the set of
-valid data files from it, the validator rejects anything outside that set, the build bakes exactly
-that set, and the site renders it. A branch cannot exist in the navigation but not the validator.
+It also means the list has exactly one definition. `expectedCollections()` derives the set of valid
+data files from it, the validator rejects anything outside that set, the build bakes exactly that
+set, and the site renders it. A programme cannot exist in the navigation but not the validator.
 
-### The first-year special case
+### Why collections are three levels deep
 
-First year is common across every branch at MUJ, so its papers live in one `common.json` rather than
-fourteen identical copies. Rather than special-case it in the view, the catalogue carries
-`"branched": false` and the routing skips the branch-picking screen for any year with that flag.
-If the University ever splits first year by branch, that's a one-word change.
+A collection is `<programme>/year-N/<specialisation>`. Two levels — year then branch — was enough
+while the archive was B.Tech-only, and stopped being enough the moment it covered BBA and BPES:
+"third year CSE" is unambiguous, "second year" is not.
+
+Two things are derived rather than listed, so they cannot drift:
+
+- **Semesters.** Year N covers semesters 2N−1 and 2N, for every programme here. `semestersFor()`
+  computes it; nothing stores it.
+- **Whether a year splits.** `isBranched(programme, year)` is true when the programme has
+  specialisations *and* the year is not in its `commonYears`. B.Tech's first year is common to
+  every branch, so it files under `btech/year-1/common` rather than fifteen identical copies —
+  expressed as `"commonYears": [1]` on the programme, not as a special case in the view. A
+  programme with no `branches` at all takes the same path, which is why most of MUJ's catalogue
+  needed no new code.
+
+`year-N` in the key rather than `third-year` is what keeps a five-year B.Arch and a one-year LLM
+from needing an ordinal table anywhere but the display layer.
 
 ## Security posture
 
@@ -102,11 +115,10 @@ organisation enables `sha_pinning_required`, so a `@v4` reference is rejected be
 
 ## What isn't here yet
 
-- **No contribution bot.** campus-mapper turns an issue into a PR automatically. That's worth
-  copying once the archive has enough traffic to justify it, but a bot that parses untrusted issue
-  bodies into file writes is exactly where that repo found its
-  [security bugs](https://github.com/accelerate-muj/campus-mapper/blob/main/CHANGELOG.md), so it
-  should be built deliberately rather than early.
-- **No search.** Fourteen branches × four years is navigable by clicking. Once a branch holds
-  fifty papers, a filter on the papers screen will earn its place.
+- **No subject catalogue.** `data/pyq/subjects.json` has a key for every collection and a list for
+  none of them. The lists have to be copied out of MUJ's real curriculum — an invented subject code
+  files a paper under a subject that does not exist, which is worse than making someone type it.
+  Until then the picker learns from what has already been filed.
+- **No search.** A hundred-odd collections are navigable by clicking, three screens deep. Once a
+  collection holds fifty papers, a filter on the papers screen will earn its place.
 - **No pagination.** Same reasoning.

@@ -3,17 +3,18 @@
 /**
  * The PYQ archive's view layer.
  *
- * Three screens, selected by the URL hash:
+ * Four screens, selected by the URL hash:
  *
- *   #/                        pick a year
- *   #/second-year             pick a branch (only for a branched year)
- *   #/second-year/cse         the papers themselves
+ *   #/                        pick a programme
+ *   #/btech                   pick a year
+ *   #/btech/year-3            pick a specialisation (only where the year splits)
+ *   #/btech/year-3/cse-aiml   the papers themselves
  *
- * Hash routing rather than a page per branch: there are four years and fourteen
- * branches, so real pages would mean ~43 near-identical HTML files to keep in
- * sync by hand. Hash routing also survives being opened over file://, which
- * path-based routing does not — and opening the file directly is how most
- * contributors will check their own change before pushing.
+ * Hash routing rather than a page per collection: the catalogue implies over a
+ * hundred collections, so real pages would mean a hundred near-identical HTML
+ * files to keep in sync by hand. Hash routing also survives being opened over
+ * file://, which path-based routing does not — and opening the file directly is
+ * how most contributors will check their own change before pushing.
  *
  * Everything is built with createElement/textContent rather than innerHTML.
  * Paper titles and contributor handles come from contributed JSON, and string
@@ -65,33 +66,43 @@
 
   /* --- Lookups ----------------------------------------------------------- */
 
-  function findYear(yearId) {
-    return catalogue.years.find(function (year) {
-      return year.id === yearId;
-    });
+  function papersFor(programme, year, branchId) {
+    return collections[PYQ.collectionKey(programme.id, year, branchId)] || [];
   }
 
-  function findBranch(branchId) {
-    return catalogue.branches.find(function (branch) {
-      return branch.id === branchId;
-    });
-  }
-
-  function papersFor(yearId, branchId) {
-    return collections[PYQ.collectionKey(yearId, branchId)] || [];
-  }
-
-  /** How many papers a year holds across every one of its branches. */
-  function countForYear(year) {
-    if (!year.branched) return papersFor(year.id, null).length;
-    return catalogue.branches.reduce(function (total, branch) {
-      return total + papersFor(year.id, branch.id).length;
+  /** How many papers one year of a programme holds, across all its branches. */
+  function countForYear(programme, year) {
+    if (!PYQ.isBranched(programme, year)) return papersFor(programme, year, null).length;
+    return programme.branches.reduce(function (total, branch) {
+      return total + papersFor(programme, year, branch.id).length;
     }, 0);
+  }
+
+  function countForProgramme(programme) {
+    let total = 0;
+    for (let year = 1; year <= programme.years; year += 1) total += countForYear(programme, year);
+    return total;
   }
 
   function countLabel(count) {
     if (count === 0) return 'No papers yet';
     return count + (count === 1 ? ' paper' : ' papers');
+  }
+
+  /** "4 years · 15 specialisations" — what a programme card says about itself. */
+  function programmeMeta(programme) {
+    const parts = [programme.years + (programme.years === 1 ? ' year' : ' years')];
+    if (programme.branches && programme.branches.length > 0) {
+      parts.push(programme.branches.length + ' specialisations');
+    }
+    return parts.join(' · ');
+  }
+
+  function groupName(groupId) {
+    const group = (catalogue.programmeGroups || []).find(function (candidate) {
+      return candidate.id === groupId;
+    });
+    return group ? group.name : 'Other programmes';
   }
 
   /* --- Shared chrome ----------------------------------------------------- */
@@ -135,61 +146,27 @@
     return el('hr', { class: 'trajectory' });
   }
 
-  /* --- Screen: pick a year ----------------------------------------------- */
+  /* --- Screen: pick a programme ------------------------------------------ */
 
-  function yearScreen() {
-    const cards = catalogue.years
-      .slice()
-      .sort(function (a, b) {
-        return a.ordinal - b.ordinal;
-      })
-      .map(function (year) {
-        const meta = year.branched
-          ? catalogue.branches.length + ' branches · semesters ' + year.semesters.join(' & ')
-          : 'Common to all branches · semesters ' + year.semesters.join(' & ');
-        return card('#/' + year.id, year.name, meta, countForYear(year));
-      });
-
-    return [
+  function programmeScreen() {
+    const nodes = [
       prompt('find ./pyq -name "*.pdf"'),
       el('h1', {}, ['Past year papers. ', el('span', { class: 'accent', text: 'All of them.' })]),
       el('p', {
         class: 'lede',
         text:
-          'Mid-term and end-term papers for Manipal University Jaipur, organised by year of study. ' +
-          'Pick your year to start.',
+          'Mid-term and end-term papers from across Manipal University Jaipur — every programme, ' +
+          'not just engineering. Pick yours to start.',
       }),
       trajectory(),
-      el('ul', { class: 'card-grid' }, cards),
-      el('div', { class: 'empty-actions' }, [
-        el('a', { class: 'btn-cta', href: 'add/', text: 'Add a paper' }),
-        el('span', { class: 'card-meta', text: 'Scan it with your phone, or upload what you have.' }),
-      ]),
-    ];
-  }
-
-  /* --- Screen: pick a branch --------------------------------------------- */
-
-  function branchScreen(year) {
-    const nodes = [
-      breadcrumb([
-        { label: 'PYQ Archive', href: '#/' },
-        { label: year.name },
-      ]),
-      prompt('cd ./pyq/' + year.id),
-      el('h1', { text: year.name }),
-      el('p', {
-        class: 'lede',
-        text: 'Semesters ' + year.semesters.join(' and ') + '. Pick your branch.',
-      }),
     ];
 
-    // Grouped so a fourteen-item list reads as two short ones.
-    catalogue.branchGroups.forEach(function (group) {
-      const branches = catalogue.branches.filter(function (branch) {
-        return branch.group === group.id;
+    // Grouped, because twenty-odd programmes as one list is a wall.
+    (catalogue.programmeGroups || []).forEach(function (group) {
+      const programmes = catalogue.programmes.filter(function (programme) {
+        return programme.group === group.id;
       });
-      if (branches.length === 0) return;
+      if (programmes.length === 0) return;
 
       const headingId = 'group-' + group.id;
       nodes.push(el('h2', { class: 'group-heading', id: headingId, text: group.name }));
@@ -197,25 +174,78 @@
         el(
           'ul',
           { class: 'card-grid', 'aria-labelledby': headingId },
-          branches.map(function (branch) {
-            return card(
-              '#/' + year.id + '/' + branch.id,
-              branch.short,
-              branch.short === branch.name ? null : branch.name,
-              papersFor(year.id, branch.id).length
-            );
+          programmes.map(function (programme) {
+            return card('#/' + programme.id, programme.short, programme.name, countForProgramme(programme));
           })
         )
       );
     });
 
+    nodes.push(
+      el('div', { class: 'empty-actions' }, [
+        el('a', { class: 'btn-cta', href: 'add/', text: 'Add a paper' }),
+        el('span', { class: 'card-meta', text: 'Scan it with your phone, or upload what you have.' }),
+      ])
+    );
+
     return nodes;
+  }
+
+  /* --- Screen: pick a year ----------------------------------------------- */
+
+  function yearScreen(programme) {
+    const cards = [];
+    for (let year = 1; year <= programme.years; year += 1) {
+      const semesters = PYQ.semestersFor(year);
+      const meta = PYQ.isBranched(programme, year)
+        ? programme.branches.length + ' specialisations · semesters ' + semesters.join(' & ')
+        : 'Semesters ' + semesters.join(' & ');
+      cards.push(card('#/' + programme.id + '/' + PYQ.yearId(year), PYQ.yearName(year), meta, countForYear(programme, year)));
+    }
+
+    return [
+      breadcrumb([{ label: 'PYQ Archive', href: '#/' }, { label: programme.short }]),
+      prompt('cd ./pyq/' + programme.id),
+      el('h1', { text: programme.short }),
+      el('p', { class: 'lede', text: programme.name + '. ' + programmeMeta(programme) + '. Pick your year.' }),
+      trajectory(),
+      el('ul', { class: 'card-grid' }, cards),
+    ];
+  }
+
+  /* --- Screen: pick a specialisation -------------------------------------- */
+
+  function branchScreen(programme, year) {
+    return [
+      breadcrumb([
+        { label: 'PYQ Archive', href: '#/' },
+        { label: programme.short, href: '#/' + programme.id },
+        { label: PYQ.yearName(year) },
+      ]),
+      prompt('cd ./pyq/' + programme.id + '/' + PYQ.yearId(year)),
+      el('h1', { text: PYQ.yearName(year) + ' — ' + programme.short }),
+      el('p', {
+        class: 'lede',
+        text: 'Semesters ' + PYQ.semestersFor(year).join(' and ') + '. Pick your specialisation.',
+      }),
+      el(
+        'ul',
+        { class: 'card-grid' },
+        programme.branches.map(function (branch) {
+          return card(
+            '#/' + programme.id + '/' + PYQ.yearId(year) + '/' + branch.id,
+            branch.short,
+            branch.short === branch.name ? null : branch.name,
+            papersFor(programme, year, branch.id).length
+          );
+        })
+      ),
+    ];
   }
 
   /* --- Screen: the papers ------------------------------------------------- */
 
   function paperNode(paper) {
-    const label = [paper.exam, paper.year].join(' ');
     const detail = [];
     if (paper.semester) detail.push('semester ' + paper.semester);
     if (paper.pages) detail.push(paper.pages + ' pages');
@@ -257,14 +287,14 @@
    * Per-exam "add" chips on a subject card.
    *
    * This is the shortest path in the whole archive: the reader is looking at
-   * a subject inside a branch inside a year, so year, branch, subject, code
+   * a subject inside a collection, so programme, year, branch, subject, code
    * and exam are all already known. The link carries every one of them, which
    * means the scanner has nothing left to ask and opens straight on the camera.
    *
    * Only exam types that are missing for this subject are offered — an "add
    * MTE" chip next to three existing MTE papers is noise.
    */
-  function addChips(year, branch, group) {
+  function addChips(programme, year, branch, group) {
     const have = new Set(
       group.papers.map(function (paper) {
         return paper.exam;
@@ -277,8 +307,6 @@
     if (missing.length === 0) return null;
 
     const context = { subject: group.subject, code: group.code || '' };
-    const semester = group.papers.length ? group.papers[0].semester : null;
-    if (semester) context.semester = String(semester);
 
     return el('div', { class: 'subject-add' }, [
       el('span', { class: 'subject-add-label', text: 'Add' }),
@@ -289,7 +317,7 @@
           return el('li', {}, [
             el('a', {
               class: 'add-chip',
-              href: addUrl(year, branch, Object.assign({ exam: type.id }, context)),
+              href: addUrl(programme, year, branch, Object.assign({ exam: type.id }, context)),
               text: type.id,
               'aria-label': 'Add a ' + type.name + ' paper for ' + group.subject,
             }),
@@ -299,12 +327,12 @@
     ]);
   }
 
-  function subjectNode(year, branch, group) {
+  function subjectNode(programme, year, branch, group) {
     return el('article', { class: 'subject' }, [
       el('h3', { text: group.subject }),
       group.code ? el('p', { class: 'subject-code', text: group.code }) : null,
       el('ul', { class: 'paper-list' }, group.papers.map(paperNode)),
-      addChips(year, branch, group),
+      addChips(programme, year, branch, group),
     ]);
   }
 
@@ -315,8 +343,8 @@
    * carries the less form a contributor sees. From a subject card with an exam
    * type, that is nothing at all — it opens on the camera.
    */
-  function addUrl(year, branch, extra) {
-    const params = new URLSearchParams({ year: year.id });
+  function addUrl(programme, year, branch, extra) {
+    const params = new URLSearchParams({ programme: programme.id, year: String(year) });
     if (branch) params.set('branch', branch.id);
     Object.keys(extra || {}).forEach(function (key) {
       if (extra[key]) params.set(key, extra[key]);
@@ -324,18 +352,18 @@
     return 'add/?' + params.toString();
   }
 
-  function emptyState(year, branch) {
+  function emptyState(programme, year, branch) {
+    const what = programme.short + ' ' + PYQ.yearName(year).toLowerCase() + (branch ? ' ' + branch.short : '');
+
     return el('div', { class: 'empty' }, [
       el('h2', { text: 'No papers here yet' }),
       el('p', {
         text:
-          'Nobody has added a ' +
-          (branch ? branch.short + ' ' : '') +
-          year.name.toLowerCase() +
-          ' paper yet. If you have one in front of you, photographing it takes about a minute.',
+          'Nobody has added a ' + what + ' paper yet. If you have one in front of you, ' +
+          'photographing it takes about a minute.',
       }),
       el('div', { class: 'empty-actions' }, [
-        el('a', { class: 'btn-cta', href: addUrl(year, branch), text: 'Add a paper' }),
+        el('a', { class: 'btn-cta', href: addUrl(programme, year, branch), text: 'Add a paper' }),
       ]),
       el('p', { class: 'card-meta' }, [
         'Prefer to do it by hand? ',
@@ -345,31 +373,43 @@
     ]);
   }
 
-  function papersScreen(year, branch) {
-    const papers = papersFor(year.id, branch ? branch.id : null);
+  function papersScreen(programme, year, branch) {
+    const papers = papersFor(programme, year, branch ? branch.id : null);
 
-    const trail = [{ label: 'PYQ Archive', href: '#/' }];
+    const trail = [
+      { label: 'PYQ Archive', href: '#/' },
+      { label: programme.short, href: '#/' + programme.id },
+    ];
     if (branch) {
-      trail.push({ label: year.name, href: '#/' + year.id });
+      trail.push({ label: PYQ.yearName(year), href: '#/' + programme.id + '/' + PYQ.yearId(year) });
       trail.push({ label: branch.short });
     } else {
-      trail.push({ label: year.name });
+      trail.push({ label: PYQ.yearName(year) });
     }
 
-    const heading = branch ? branch.short + ' — ' + year.name : year.name;
-    const lede = branch
-      ? branch.name + ', semesters ' + year.semesters.join(' and ') + '.'
-      : year.note || 'Semesters ' + year.semesters.join(' and ') + '.';
+    const heading = branch
+      ? branch.short + ' — ' + PYQ.yearName(year)
+      : PYQ.yearName(year) + ' — ' + programme.short;
+
+    // Three cases: a specialisation names itself, a common year of a branched
+    // programme explains why it has no specialisation, and everything else
+    // just names the degree.
+    const context = branch
+      ? branch.name
+      : programme.branches && programme.branches.length
+        ? programme.note || 'Common to every specialisation.'
+        : programme.name;
+    const lede = context.replace(/\.?$/, '.') + ' Semesters ' + PYQ.semestersFor(year).join(' and ') + '.';
 
     const nodes = [
       breadcrumb(trail),
-      prompt('ls ./pyq/' + PYQ.collectionKey(year.id, branch ? branch.id : null)),
+      prompt('ls ./pyq/' + PYQ.collectionKey(programme.id, year, branch ? branch.id : null)),
       el('h1', { text: heading }),
       el('p', { class: 'lede', text: lede }),
     ];
 
     if (papers.length === 0) {
-      nodes.push(emptyState(year, branch));
+      nodes.push(emptyState(programme, year, branch));
       return nodes;
     }
 
@@ -378,13 +418,13 @@
       el('p', { class: 'group-heading', text: countLabel(papers.length) + ' · ' + groups.length + ' subjects' })
     );
     groups.forEach(function (group) {
-      nodes.push(subjectNode(year, branch, group));
+      nodes.push(subjectNode(programme, year, branch, group));
     });
 
     // A reader who did not find what they wanted is the likeliest contributor.
     nodes.push(
       el('div', { class: 'empty-actions' }, [
-        el('a', { class: 'btn-cta', href: addUrl(year, branch), text: 'Add a paper' }),
+        el('a', { class: 'btn-cta', href: addUrl(programme, year, branch), text: 'Add a paper' }),
       ])
     );
 
@@ -417,6 +457,19 @@
 
   /* --- Routing ------------------------------------------------------------ */
 
+  /**
+   * The archive was B.Tech-only for its first few days, and those links are
+   * out there. Rewriting them costs four lines and beats a 404.
+   */
+  const LEGACY_YEARS = { 'first-year': 1, 'second-year': 2, 'third-year': 3, 'fourth-year': 4 };
+
+  function upgradeLegacyRoute(parts) {
+    if (parts.length === 0 || !Object.prototype.hasOwnProperty.call(LEGACY_YEARS, parts[0])) return null;
+    const upgraded = ['btech', PYQ.yearId(LEGACY_YEARS[parts[0]])];
+    if (parts[1]) upgraded.push(parts[1]);
+    return upgraded;
+  }
+
   function parseRoute() {
     const hash = window.location.hash.replace(/^#\/?/, '');
     return hash.split('/').filter(function (part) {
@@ -425,41 +478,59 @@
   }
 
   function route() {
-    const parts = parseRoute();
+    let parts = parseRoute();
+
+    const upgraded = upgradeLegacyRoute(parts);
+    if (upgraded) {
+      window.location.replace('#/' + upgraded.join('/'));
+      return;
+    }
 
     if (parts.length === 0) {
       document.title = 'Past Year Question Papers — Accelerate';
-      render(yearScreen());
+      render(programmeScreen());
       return;
     }
 
-    const year = findYear(parts[0]);
-    if (!year) {
-      render(notFoundScreen('year called "' + parts[0] + '"'));
+    const programme = PYQ.findProgramme(catalogue, parts[0]);
+    if (!programme) {
+      render(notFoundScreen('programme called "' + parts[0] + '"'));
       return;
     }
 
-    // An unbranched year has no branch layer to pick from, so it goes straight
-    // to its papers.
     if (parts.length === 1) {
-      document.title = year.name + ' — PYQ Archive';
-      render(year.branched ? branchScreen(year) : papersScreen(year, null));
+      document.title = programme.short + ' — PYQ Archive';
+      render(yearScreen(programme));
       return;
     }
 
-    if (!year.branched) {
-      render(notFoundScreen(year.name + ' branch — that year is common to every branch'));
+    const year = PYQ.parseYearId(parts[1]);
+    if (!year || year > programme.years) {
+      render(notFoundScreen(programme.short + ' year "' + parts[1] + '"'));
       return;
     }
 
-    const branch = findBranch(parts[1]);
+    // A year with no specialisations has no layer to pick from, so it goes
+    // straight to its papers.
+    if (parts.length === 2) {
+      document.title = PYQ.yearName(year) + ' ' + programme.short + ' — PYQ Archive';
+      render(PYQ.isBranched(programme, year) ? branchScreen(programme, year) : papersScreen(programme, year, null));
+      return;
+    }
+
+    if (!PYQ.isBranched(programme, year)) {
+      render(notFoundScreen(programme.short + ' ' + PYQ.yearName(year).toLowerCase() + ' specialisation — that year is not split'));
+      return;
+    }
+
+    const branch = PYQ.findBranch(programme, parts[2]);
     if (!branch) {
-      render(notFoundScreen('branch called "' + parts[1] + '"'));
+      render(notFoundScreen(programme.short + ' specialisation called "' + parts[2] + '"'));
       return;
     }
 
-    document.title = branch.short + ' ' + year.name + ' — PYQ Archive';
-    render(papersScreen(year, branch));
+    document.title = branch.short + ' ' + PYQ.yearName(year) + ' — PYQ Archive';
+    render(papersScreen(programme, year, branch));
   }
 
   /**

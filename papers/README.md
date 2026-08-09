@@ -10,13 +10,13 @@ When you do commit one:
 
 ```
 papers/<year>/<branch>/<subject-code>-<exam>-<year>.pdf
-papers/second-year/cse/cs2001-mte-2024.pdf
+papers/btech/year-2/cse/cs2001-mte-2024.pdf
 ```
 
 Then reference it from the matching data file with `file` rather than `url`:
 
 ```json
-{ "id": "cse-2024-mte-cs2001", "…": "…", "file": "papers/second-year/cse/cs2001-mte-2024.pdf" }
+{ "id": "cse-2024-mte-cs2001", "…": "…", "file": "papers/btech/year-2/cse/cs2001-mte-2024.pdf" }
 ```
 
 CI checks that every `file` path is actually committed, so this can't render as a dead link on the
