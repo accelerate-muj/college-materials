@@ -1,38 +1,74 @@
 name: Pages status
 
-# Read-only diagnostic. Prints the repository's current GitHub Pages
-# configuration so the source, build type and status can be checked without
-# guessing at what the settings page shows. Run it from the Actions tab.
+# Reports the repository's GitHub Pages configuration and, with attempt_fix,
+# tries to switch it to branch-based serving from main / root.
 #
-# This deploys nothing. See README.md ("Enabling Pages") for why deployment
-# cannot run from a workflow under this organisation's settings.
+# Pages here was created with build_type "workflow", which means the source
+# branch is ignored and nothing is served until a workflow deployment succeeds
+# — and deployment cannot succeed under this org's settings (see README,
+# "Enabling Pages"). Switching build_type to "legacy" is the fix; whether a
+# workflow token is allowed to do that is what attempt_fix answers.
+#
+# Run it from the Actions tab.
 
 on:
   workflow_dispatch:
+    inputs:
+      attempt_fix:
+        description: "Try to switch Pages to main / root (otherwise report only)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
-  pages: read
+  pages: write
 
 jobs:
   status:
     name: Report Pages configuration
     runs-on: ubuntu-latest
     steps:
-      - name: Read the Pages API
+      - name: Read, and optionally reconfigure, Pages
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
+          ATTEMPT_FIX: ${{ inputs.attempt_fix }}
         run: |
-          set -euo pipefail
-          code=$(curl -sS -o /tmp/pages.json -w '%{http_code}' \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/$REPO/pages")
+          set -uo pipefail
 
-          echo "HTTP $code"
-          if [ "$code" = "404" ]; then
-            echo "No Pages site exists for this repository."
+          api="https://api.github.com/repos/$REPO/pages"
+          auth=(-H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json")
+
+          echo "::group::Current configuration"
+          curl -sS "${auth[@]}" "$api"
+          echo
+          echo "::endgroup::"
+
+          if [ "$ATTEMPT_FIX" != "true" ]; then
+            echo "Report only. Re-run with attempt_fix to try switching the source."
             exit 0
           fi
-          cat /tmp/pages.json
+
+          # Several shapes, because the API is picky about which fields may be
+          # changed together and the failure mode is an opaque 403 either way.
+          # Printing each body is the point of this run.
+          try() {
+            echo "::group::PUT $1"
+            code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X PUT "${auth[@]}" -d "$2" "$api")
+            echo "HTTP $code"
+            cat /tmp/out.json 2>/dev/null || true
+            echo
+            echo "::endgroup::"
+            [ "$code" = "204" ] && return 0 || return 1
+          }
+
+          if try "build_type + source" '{"build_type":"legacy","source":{"branch":"main","path":"/"}}' \
+            || try "source only" '{"source":{"branch":"main","path":"/"}}' \
+            || try "build_type only" '{"build_type":"legacy"}'; then
+            echo "Switched. Final configuration:"
+            curl -sS "${auth[@]}" "$api"
+            echo
+          else
+            echo "::warning::Could not change the Pages source from a workflow. Set it by hand: Settings -> Pages -> Source -> Deploy from a branch -> main / (root)."
+            exit 1
+          fi
