@@ -103,6 +103,16 @@ summary:focus-visible,
   outline-offset: 3px;
 }
 
+/*
+ * tabindex="-1" marks a programmatic focus target — a <main> or a heading that
+ * script focuses after a step change so a screen reader announces it. The user
+ * did not tab there and cannot, so a ring around it is noise rather than a cue.
+ * This is the one place an outline is legitimately removed.
+ */
+[tabindex="-1"]:focus {
+  outline: none;
+}
+
 /* --- Motifs ---------------------------------------------------------------
  * Four, all cheap, all optional. Use them sparingly.
  */

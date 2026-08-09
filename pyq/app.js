@@ -253,18 +253,74 @@
     ]);
   }
 
-  function subjectNode(group) {
+  /**
+   * Per-exam "add" chips on a subject card.
+   *
+   * This is the shortest path in the whole archive: the reader is looking at
+   * a subject inside a branch inside a year, so year, branch, subject, code
+   * and exam are all already known. The link carries every one of them, which
+   * means the scanner has nothing left to ask and opens straight on the camera.
+   *
+   * Only exam types that are missing for this subject are offered — an "add
+   * MTE" chip next to three existing MTE papers is noise.
+   */
+  function addChips(year, branch, group) {
+    const have = new Set(
+      group.papers.map(function (paper) {
+        return paper.exam;
+      })
+    );
+
+    const missing = catalogue.examTypes.filter(function (type) {
+      return !have.has(type.id);
+    });
+    if (missing.length === 0) return null;
+
+    const context = { subject: group.subject, code: group.code || '' };
+    const semester = group.papers.length ? group.papers[0].semester : null;
+    if (semester) context.semester = String(semester);
+
+    return el('div', { class: 'subject-add' }, [
+      el('span', { class: 'subject-add-label', text: 'Add' }),
+      el(
+        'ul',
+        { class: 'paper-list' },
+        missing.map(function (type) {
+          return el('li', {}, [
+            el('a', {
+              class: 'add-chip',
+              href: addUrl(year, branch, Object.assign({ exam: type.id }, context)),
+              text: type.id,
+              'aria-label': 'Add a ' + type.name + ' paper for ' + group.subject,
+            }),
+          ]);
+        })
+      ),
+    ]);
+  }
+
+  function subjectNode(year, branch, group) {
     return el('article', { class: 'subject' }, [
       el('h3', { text: group.subject }),
       group.code ? el('p', { class: 'subject-code', text: group.code }) : null,
       el('ul', { class: 'paper-list' }, group.papers.map(paperNode)),
+      addChips(year, branch, group),
     ]);
   }
 
-  /** Deep-links the scanner straight to the collection the reader is looking at. */
-  function addUrl(year, branch) {
+  /**
+   * Deep-links the scanner with everything this screen already knows.
+   *
+   * The scanner skips any step the URL answers, so the more context a link
+   * carries the less form a contributor sees. From a subject card with an exam
+   * type, that is nothing at all — it opens on the camera.
+   */
+  function addUrl(year, branch, extra) {
     const params = new URLSearchParams({ year: year.id });
     if (branch) params.set('branch', branch.id);
+    Object.keys(extra || {}).forEach(function (key) {
+      if (extra[key]) params.set(key, extra[key]);
+    });
     return 'add/?' + params.toString();
   }
 
@@ -322,7 +378,7 @@
       el('p', { class: 'group-heading', text: countLabel(papers.length) + ' · ' + groups.length + ' subjects' })
     );
     groups.forEach(function (group) {
-      nodes.push(subjectNode(group));
+      nodes.push(subjectNode(year, branch, group));
     });
 
     // A reader who did not find what they wanted is the likeliest contributor.

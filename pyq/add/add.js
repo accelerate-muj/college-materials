@@ -125,11 +125,20 @@
   $('year').addEventListener('change', syncYear);
 
   /*
-   * The archive links here with ?year=&branch= from whichever collection the
-   * reader was looking at, so the first screen is already answered. Unknown
-   * values are ignored rather than trusted — this is a URL.
+   * The archive links here carrying whatever the reader was already looking at.
+   * Someone who pressed "Add" from inside Third Year › CSE (AI & ML) has
+   * answered "where does this go" by navigating there, and asking again is a
+   * form standing between them and the thing they came to do.
+   *
+   * So: every question the URL answers is filled in and its step is skipped,
+   * and the flow opens on the first step that still needs something. A caller
+   * that supplies year, branch, subject and exam lands straight on the camera.
+   *
+   * Everything here is a URL, so nothing is trusted: each value has to resolve
+   * against the catalogue or it is dropped and the step is asked normally.
    */
   const params = new URLSearchParams(window.location.search);
+
   const wantedYear = catalogue.years.find(function (year) {
     return year.id === params.get('year');
   });
@@ -141,6 +150,30 @@
     return branch.id === params.get('branch');
   });
   if (wantedBranch && wantedYear && wantedYear.branched) $('branch').value = wantedBranch.id;
+
+  const wantedExam = catalogue.examTypes.find(function (type) {
+    return type.id === params.get('exam');
+  });
+  if (wantedExam) $('exam').value = wantedExam.id;
+
+  const wantedSubject = (params.get('subject') || '').trim().slice(0, 120);
+  if (wantedSubject) $('subject').value = wantedSubject;
+
+  const wantedCode = (params.get('code') || '').trim().toUpperCase().replace(/\s+/g, '').slice(0, 12);
+  if (wantedCode && /^[A-Z]{2,4}\d{3,4}$/.test(wantedCode)) $('code').value = wantedCode;
+
+  const wantedSemester = Number(params.get('semester'));
+  if (wantedYear && wantedYear.semesters.indexOf(wantedSemester) !== -1) {
+    $('semester').value = String(wantedSemester);
+  }
+
+  /** True once the URL has fully answered "where does this paper go". */
+  const placeKnown = Boolean(wantedYear) && (!wantedYear.branched || Boolean(wantedBranch));
+
+  /** True once it has also answered "what is it" well enough to skip the form. */
+  const detailsKnown = placeKnown && Boolean(wantedSubject) && Boolean(wantedExam);
+
+  const prefilled = { place: placeKnown, details: detailsKnown };
 
   /* --- Step navigation ------------------------------------------------------ */
 
@@ -161,6 +194,8 @@
       else el.removeAttribute('aria-current');
     });
 
+    renderContext(name);
+
     if (name === 'submit') renderSummary();
 
     // Focus the new step's heading so a screen reader announces the move.
@@ -172,10 +207,57 @@
     window.scrollTo({ top: 0, behavior: 'auto' });
   }
 
+  /**
+   * A skipped step is still a decision that was made on the contributor's
+   * behalf, so it is shown back to them with a way to change it. Silently
+   * filing a paper somewhere they did not choose is worse than one extra click.
+   */
+  function renderContext(step) {
+    const bar = $('context');
+    bar.textContent = '';
+
+    const parts = [];
+    if (prefilled.place && step !== 'place') {
+      const year = currentYear();
+      const branch = currentBranch();
+      parts.push({ text: branch ? year.name + ' › ' + branch.short : year.name, step: 'place' });
+    }
+    if (prefilled.details && step !== 'details' && $('subject').value.trim()) {
+      const code = $('code').value.trim();
+      parts.push({ text: (code ? code + ' — ' : '') + $('subject').value.trim() + ' · ' + $('exam').value, step: 'details' });
+    }
+
+    bar.hidden = parts.length === 0;
+    if (!parts.length) return;
+
+    parts.forEach(function (part, index) {
+      if (index > 0) bar.appendChild(document.createTextNode(' · '));
+      const span = document.createElement('span');
+      span.className = 'context-value';
+      span.textContent = part.text;
+      bar.appendChild(span);
+      const change = document.createElement('button');
+      change.type = 'button';
+      change.className = 'context-change';
+      change.textContent = 'change';
+      change.setAttribute('aria-label', 'Change ' + part.text);
+      change.addEventListener('click', function () {
+        showStep(part.step);
+      });
+      bar.appendChild(change);
+    });
+  }
+
   document.addEventListener('click', function (event) {
     const back = event.target.closest('[data-back]');
     if (back) {
-      showStep(back.dataset.back);
+      // Walking back into a step the URL answered is fine — they asked for it —
+      // but the default Back button should skip it, or "Back" from the camera
+      // would land on a form they never filled in.
+      let target = back.dataset.back;
+      if (target === 'details' && prefilled.details) target = 'place';
+      if (target === 'place' && prefilled.place) return;
+      showStep(target);
       return;
     }
 
@@ -632,5 +714,10 @@
 
   window.addEventListener('beforeunload', closeCamera);
 
-  showStep('place');
+  /*
+   * Open on the first unanswered step. detailsKnown implies placeKnown, so the
+   * order here is the order of the flow. A caller that supplied everything
+   * lands on 'pages' — the camera — which is the whole point.
+   */
+  showStep(detailsKnown ? 'pages' : placeKnown ? 'details' : 'place');
 })();

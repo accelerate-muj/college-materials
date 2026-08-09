@@ -37,7 +37,18 @@ Everything below has landed on `main`.
   body and the workflow that reads it back, so the two cannot drift.
 
 - **"Add a paper" throughout the archive** — in the nav, on the year screen, at the foot of every
-  collection, and in the empty state, deep-linked so the year and branch arrive pre-selected.
+  collection, and in the empty state.
+
+- **The scanner skips whatever the link already answered.** Every entry point carries what that
+  screen knows, and any step the URL fills in is marked done and passed over, so the flow opens on
+  the first question that still needs an answer. Each subject card also offers a `+ MTE` / `+ ETE`
+  chip for the exam types it is *missing*: those carry year, branch, subject, code, semester and
+  exam, which is everything — pressing one opens straight on the camera with no form at all.
+
+  Skipped steps are not hidden. A context bar shows what was decided, with a *change* link on each
+  part, because filing someone's paper somewhere they never chose is worse than one extra click.
+  Values that do not resolve against the catalogue are dropped and the step is asked normally — it
+  is a URL, so none of it is trusted.
 
 - **Repository scaffolding matching the club's conventions.** `README.md`, `CONTRIBUTING.md`,
   `ARCHITECTURE.md`, `CHANGELOG.md`, `LICENSE`, `.editorconfig`, `.gitattributes`, `.gitignore` and
