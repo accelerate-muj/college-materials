@@ -167,14 +167,20 @@ jobs:
               } else {
                 // The branch exists either way, so the compare link is one
                 // click from a pull request.
+                // Branch names are already restricted to [a-z0-9-] plus the
+                // one "paper/" separator, so the refs go in literally. They
+                // must NOT be percent-encoded: %2F in a compare ref does not
+                // resolve. campus-mapper sidesteps this by stripping slashes
+                // from its branch names entirely.
                 const compare = "https://github.com/" + REPO + "/compare/" +
-                  encodeURIComponent(DEFAULT_BRANCH) + "..." + encodeURIComponent(BRANCH) +
+                  DEFAULT_BRANCH + "..." + BRANCH +
                   "?expand=1&title=" + encodeURIComponent(PR_TITLE);
                 body = [
                   "Thanks! Your paper is committed to `" + BRANCH + "`.",
                   "",
-                  "**One click left:** [open the pull request](" + compare + "). This repository does not let",
-                  "Actions create pull requests, so the last step is manual — a maintainer can do it if you would rather.",
+                  "**[Open the pull request](" + compare + ")** — one click, and you do not need to wait",
+                  "for a maintainer to do it. (This repository does not allow Actions to open pull",
+                  "requests, which is why the last step is yours.)",
                 ].join("\n");
               }
             }
