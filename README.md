@@ -7,12 +7,6 @@ somebody's Drive fills up.
 
 **Browse it: [accelerate-muj.github.io/college-materials](https://accelerate-muj.github.io/college-materials/)**
 
-> **Pages needs one manual switch before that URL works.**
-> Pages is enabled on this repository, but its source is still set to *GitHub Actions*, and this
-> organisation cannot deploy that way — see [Enabling Pages](#enabling-pages) below. Go to
-> **Settings → Pages → Build and deployment → Source → Deploy from a branch**, pick `main` and
-> `/ (root)`, and save. GitHub serves the site on every push from then on.
-
 ## What's here
 
 ### Past Year Question Papers
@@ -29,8 +23,14 @@ then by branch.
 
 **[Open the archive →](https://accelerate-muj.github.io/college-materials/pyq/)**
 
-The archive is empty until people contribute to it. Adding a paper is one JSON entry — see
-[CONTRIBUTING.md](CONTRIBUTING.md).
+### Adding a paper
+
+**[Open the scanner](https://accelerate-muj.github.io/college-materials/pyq/add/)** — photograph the
+paper with your phone or upload one you already have, fill in three fields, and press submit. The
+PDF is assembled in your browser; a bot commits it and opens a pull request for a maintainer to
+review. A GitHub account is the only requirement.
+
+Doing it by hand is still a single JSON entry — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Running it locally
 
@@ -57,8 +57,11 @@ pyq/
   index.html             The archive: year -> branch -> papers
   app.js                 Hash routing and rendering
   data.js                Generated — the baked archive the page reads (window.PYQ_DATA)
+  add/                   The scanner: camera, upload, PDF assembly, submission
 src/
   pyq.js                 Pure rules: what a valid paper is, how papers sort and group
+  pdf.js                 JPEG pages -> PDF, with no dependencies
+  submission.js          The issue format, shared by the site and the bot
 data/pyq/                Source of truth — see data/pyq/README.md
   catalogue.json         Years and branches. Editing this is how you add a section.
   first-year/common.json
@@ -69,8 +72,10 @@ build.js                 data/pyq/ -> pyq/data.js
 build-fonts.js           assets/fonts/*.woff2 -> assets/fonts/fonts.css
 tests/                   Dependency-free suite; runs in Node or a browser
 .github/
-  scripts/validate-data.js   CI check over every committed record
-  workflows/ci.yml           Tests, data integrity, link check
+  scripts/validate-data.js       CI check over every committed record
+  scripts/process-submission.js  Turns a submission issue into a pull request
+  workflows/ci.yml               Tests, data integrity, link check
+  workflows/submission.yml       Runs the bot on paper-submission issues
 ```
 
 `src/pyq.js` holds pure logic — no DOM, no filesystem, no shared state — which is what lets the
@@ -94,19 +99,32 @@ you open the page over `file://`.
 
 ```mermaid
 flowchart TD
-    A["Contributor adds a record<br/>to data/pyq/&lt;year&gt;/&lt;branch&gt;.json"] --> B["node build.js<br/>regenerates pyq/data.js"]
-    B --> C["Pull request"]
-    C --> D["CI: validate-data.js<br/>checks every record"]
-    C --> E["CI: pyq/data.js in sync<br/>with data/pyq/"]
-    C --> F["CI: tests + link check"]
-    D --> G{"All green?"}
-    E --> G
-    F --> G
-    G -->|no| H["Fix and push again"]
-    H --> C
-    G -->|yes| I["Maintainer merges"]
-    I --> J["GitHub Pages redeploys<br/>from main"]
+    subgraph browser["Contributor's browser — nothing leaves the device"]
+        A["Scan with the camera,<br/>upload photos, or pick a PDF"] --> B["src/pdf.js assembles<br/>the pages into a PDF"]
+        B --> C["PDF saved to downloads"]
+        C --> D["Pre-filled issue opens,<br/>signed in as them"]
+    end
+
+    D --> E["Contributor drags the PDF in<br/>and presses Submit"]
+
+    subgraph gh["GitHub"]
+        E --> F["Issue labelled<br/>paper-submission<br/><i>untrusted input</i>"]
+        F --> G["submission.yml"]
+        G --> H["process-submission.js<br/>validate + fetch the file"]
+        H -->|rejected| I["Bot comments with<br/>exactly what was wrong"]
+        I -.->|contributor edits the issue| G
+        H -->|valid| J["Commit the PDF<br/>+ the JSON entry"]
+        J --> K["Bot opens a pull request"]
+        K --> L["CI: tests, data integrity,<br/>data.js in sync, links"]
+        L --> M["Maintainer reviews<br/>and merges"]
+        M --> N["Pages redeploys from main"]
+    end
 ```
+
+The bot never merges. Every paper is read by a person before it reaches the site.
+
+By hand, the same thing is: add a record to `data/pyq/<year>/<branch>.json`, run `node build.js`,
+and open a pull request — the CI half of the diagram is identical.
 
 ## Enabling Pages
 
@@ -136,10 +154,6 @@ settings:
 
 So the source has to be set once by hand in the UI. After that no workflow is involved: GitHub
 rebuilds and serves the branch on every push, which is why `.nojekyll` is committed.
-
-**Watch the branch dropdown.** The site was created with its source branch recorded as
-`claude/repo-structure-pyq-pages-m5lcsu`, so that is what the UI may preselect when you switch to
-"Deploy from a branch". Change it to `main`.
 
 `.github/workflows/pages-status.yml` (Actions tab → *Pages status* → Run workflow) prints the live
 configuration if you need to check what state it is in. `"build_type": "workflow"` with

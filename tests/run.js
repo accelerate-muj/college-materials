@@ -10,7 +10,7 @@
 
 const harness = require('./harness.js');
 
-const TEST_FILES = ['./pyq.test.js'];
+const TEST_FILES = ['./pyq.test.js', './pdf.test.js', './submission.test.js'];
 
 TEST_FILES.forEach((file) => require(file));
 

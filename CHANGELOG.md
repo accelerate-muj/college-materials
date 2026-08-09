@@ -10,9 +10,34 @@ semantic-release. Entries are grouped by the date they landed on `main`.
 
 ## [Unreleased]
 
-Everything below is on `claude/repo-structure-pyq-pages-m5lcsu` and not yet merged.
+Everything below has landed on `main`.
 
 ### Added
+
+- **A scanner, so contributing takes a minute and no Git.** `pyq/add/` walks through four steps:
+  where the paper goes, what it is, the pages, submit. Pages come from the camera, from photos on
+  the device, or from a PDF the contributor already has — all three are equal choices, and camera
+  and uploaded photos can be mixed.
+
+  Everything happens in the browser. Frames go to a canvas, the canvas to JPEG (downscaled, with an
+  optional greyscale-and-contrast pass), and the JPEGs into a PDF. Nothing is uploaded while the
+  contributor works.
+
+- **`src/pdf.js`** — a dependency-free PDF writer. JPEGs embed verbatim via `/DCTDecode`, so there
+  is no re-encoding and no quality loss; what the file actually implements is object bookkeeping and
+  the xref table. Every alternative was a CDN script or an npm install, and this repository has
+  neither by design. Output verified against qpdf.
+
+- **A submission bot.** `submission.yml` reacts to issues labelled `paper-submission`, validates
+  them against the same `src/pyq.js` rules CI uses, downloads the attached PDF, commits it with its
+  JSON entry and opens a pull request. **It never merges** — a maintainer reviews every paper. A
+  rejected submission gets a comment naming the problem, and editing the issue retries automatically.
+
+- **`src/submission.js`** — the issue format as pure functions, shared by the site that writes the
+  body and the workflow that reads it back, so the two cannot drift.
+
+- **"Add a paper" throughout the archive** — in the nav, on the year screen, at the foot of every
+  collection, and in the empty state, deep-linked so the year and branch arrive pre-selected.
 
 - **Repository scaffolding matching the club's conventions.** `README.md`, `CONTRIBUTING.md`,
   `ARCHITECTURE.md`, `CHANGELOG.md`, `LICENSE`, `.editorconfig`, `.gitattributes`, `.gitignore` and
@@ -26,9 +51,8 @@ Everything below is on `claude/repo-structure-pyq-pages-m5lcsu` and not yet merg
 - **A GitHub Pages site**, served from `main` at the repository root with `.nojekyll`, matching how
   `resources` is deployed. A landing page at `index.html` and the archive at `pyq/`.
 
-  Pages is now enabled on the repository, but its **source must be switched to "Deploy from a
-  branch" (`main` / root) by hand** — see [Enabling Pages](README.md#enabling-pages). Workflow-based
-  deployment was attempted and abandoned: `actions/deploy-pages` needs `id-token: write`, which this
+  Pages had to be enabled, and its source set to "Deploy from a branch" by hand — see
+  [Enabling Pages](README.md#enabling-pages). Workflow-based deployment was attempted and abandoned: `actions/deploy-pages` needs `id-token: write`, which this
   organisation does not grant (jobs requesting it fail at dispatch with no logs, reproduced four
   times including after the `github-pages` environment existed), and setting the Pages source over
   the REST API from a workflow returns 403. The README records the full finding so it is not
@@ -59,8 +83,8 @@ Everything below is on `claude/repo-structure-pyq-pages-m5lcsu` and not yet merg
   faces exactly where contributors check their own work.
 
 - **A dependency-free test suite** (`node tests/run.js`, or `tests/index.html` in a browser) using
-  the same harness as campus-mapper. 33 tests over validation, sorting, grouping and path
-  resolution.
+  the same harness as campus-mapper. 72 tests over validation, sorting, grouping, path
+  resolution, PDF structure and the submission format.
 
 - **CI**: the test suite, a validator over every committed paper record, checks that the generated
   `pyq/data.js` and `assets/fonts/fonts.css` are in sync with their sources, and a link check that
@@ -73,6 +97,16 @@ Everything below is on `claude/repo-structure-pyq-pages-m5lcsu` and not yet merg
   rule is now `main.wrap`.
 
 ### Security
+
+- **The submission bot treats the issue body as hostile**, because anyone with a GitHub account can
+  write one and the workflow holds a write token. campus-mapper shipped three holes in the
+  equivalent script, so: nothing from the issue is interpolated into a shell command (values travel
+  through `env:`, outputs through `$GITHUB_OUTPUT` with a random delimiter); the write path is
+  derived from validated catalogue ids and a sanitised id, never from submitted text, and is
+  asserted to resolve inside `papers/`; a submission that sets its own `file` or `url` is rejected;
+  the download URL must be on GitHub's own attachment hosts, or the token would be pointed at an
+  arbitrary server; and the response must begin `%PDF-` and fit under 10 MB. Each of these has a
+  test.
 
 - Paper `url` values must be `https://`; `javascript:` and `data:` URLs are rejected by the
   validator, with tests. `file` values are constrained to `.pdf` paths under `papers/`, so a

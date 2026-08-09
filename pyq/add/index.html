@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Add a paper — Accelerate</title>
+    <meta name="description" content="Scan a past year question paper with your phone and contribute it to the Accelerate archive." />
+    <meta name="theme-color" content="#0a0a0a" />
+    <link rel="stylesheet" href="../../assets/fonts/fonts.css" />
+    <link rel="stylesheet" href="../../style.css" />
+    <link rel="stylesheet" href="add.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <header class="site-header">
+      <div class="wrap">
+        <p class="site-title"><a href="../../">Accelerate</a></p>
+        <nav class="site-nav" aria-label="Site">
+          <a href="../">pyq-archive</a>
+          <a href="https://github.com/accelerate-muj/college-materials">github</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main" class="wrap" tabindex="-1">
+      <p class="prompt">scan --output pyq/</p>
+      <h1>Add a <span class="accent">paper.</span></h1>
+      <p class="lede">
+        Photograph it with your phone. The pages become a PDF in your browser — nothing is uploaded
+        anywhere until you press submit, and a maintainer reviews it before it goes live.
+      </p>
+
+      <!-- Progress. aria-current marks the active step for screen readers. -->
+      <ol class="steps" id="steps" aria-label="Progress">
+        <li data-step="place"><span>1</span> Where it goes</li>
+        <li data-step="details"><span>2</span> What it is</li>
+        <li data-step="pages"><span>3</span> Pages</li>
+        <li data-step="submit"><span>4</span> Submit</li>
+      </ol>
+
+      <!-- Step 1 ------------------------------------------------------------>
+      <section class="step" id="step-place" aria-labelledby="h-place">
+        <h2 id="h-place">Where does it go?</h2>
+
+        <div class="field">
+          <label for="year">Year of study</label>
+          <select id="year" required></select>
+        </div>
+
+        <div class="field" id="branch-field" hidden>
+          <label for="branch">Branch</label>
+          <select id="branch"></select>
+          <p class="hint" id="branch-hint"></p>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn btn-primary" data-next="details">Continue</button>
+        </div>
+      </section>
+
+      <!-- Step 2 ------------------------------------------------------------>
+      <section class="step" id="step-details" hidden aria-labelledby="h-details">
+        <h2 id="h-details">What is it?</h2>
+
+        <div class="field">
+          <label for="subject">Subject <span class="req">required</span></label>
+          <input id="subject" type="text" maxlength="120" autocomplete="off" placeholder="Data Structures and Algorithms" required />
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="code">Subject code</label>
+            <input id="code" type="text" autocomplete="off" placeholder="CS2001" />
+            <p class="hint">Groups every paper for this subject together. Worth finding.</p>
+          </div>
+          <div class="field">
+            <label for="semester">Semester</label>
+            <select id="semester"></select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="exam">Exam <span class="req">required</span></label>
+            <select id="exam" required></select>
+          </div>
+          <div class="field">
+            <label for="paper-year">Year sat <span class="req">required</span></label>
+            <input id="paper-year" type="number" inputmode="numeric" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="contributor">Your GitHub handle</label>
+          <input id="contributor" type="text" autocomplete="off" placeholder="@yourname" />
+          <p class="hint">Optional, and it is how you get credit on the site.</p>
+        </div>
+
+        <div class="field">
+          <label for="notes">Anything a reader should know</label>
+          <input id="notes" type="text" maxlength="280" placeholder="Set A only; last page was missing." />
+        </div>
+
+        <p class="error" id="details-error" role="alert" hidden></p>
+
+        <div class="actions">
+          <button type="button" class="btn" data-back="place">Back</button>
+          <button type="button" class="btn btn-primary" data-next="pages">Continue</button>
+        </div>
+      </section>
+
+      <!-- Step 3 ------------------------------------------------------------>
+      <section class="step" id="step-pages" hidden aria-labelledby="h-pages">
+        <h2 id="h-pages">Add the pages</h2>
+        <p class="hint">
+          Scan them now, or upload what you already have. You can mix the two — photograph the pages
+          you are missing and add them to the ones on your device.
+        </p>
+
+        <div class="capture" id="capture" hidden>
+          <video id="video" playsinline muted aria-label="Camera preview"></video>
+          <div class="capture-bar">
+            <button type="button" class="btn" id="camera-close">Close camera</button>
+            <button type="button" class="btn btn-shutter" id="shutter" aria-label="Capture page"></button>
+            <span class="capture-count" id="capture-count" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <ul class="sources" id="page-sources">
+          <li>
+            <button type="button" class="source" id="camera-open">
+              <span class="source-title">Scan with the camera</span>
+              <span class="source-note">Photograph each page. Best on a phone.</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="source" id="pick-images">
+              <span class="source-title">Upload photos</span>
+              <span class="source-note">Pictures you have already taken. Pick several at once.</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="source" id="pick-pdf">
+              <span class="source-title">Upload a PDF</span>
+              <span class="source-note">Already have the paper as a file? Use it as-is.</span>
+            </button>
+          </li>
+        </ul>
+
+        <input id="file-images" type="file" accept="image/*" multiple hidden />
+        <input id="file-pdf" type="file" accept="application/pdf" hidden />
+
+        <div class="field checkbox">
+          <input type="checkbox" id="enhance" checked />
+          <label for="enhance">Clean up scans — greyscale and boost contrast (smaller, more legible)</label>
+        </div>
+
+        <p class="pdf-chosen" id="pdf-chosen" hidden></p>
+        <button type="button" class="btn" id="clear-pdf" hidden>Use scanned pages instead</button>
+
+        <ul class="thumbs" id="thumbs" aria-label="Scanned pages"></ul>
+
+        <p class="error" id="pages-error" role="alert" hidden></p>
+
+        <div class="actions">
+          <button type="button" class="btn" data-back="details">Back</button>
+          <button type="button" class="btn btn-primary" data-next="submit">Continue</button>
+        </div>
+      </section>
+
+      <!-- Step 4 ------------------------------------------------------------>
+      <section class="step" id="step-submit" hidden aria-labelledby="h-submit">
+        <h2 id="h-submit">Submit it</h2>
+
+        <div class="summary" id="summary"></div>
+
+        <ol class="submit-steps">
+          <li>
+            <h3>1 — Save the PDF</h3>
+            <p>It is built in your browser from the pages you scanned. Nothing has left your device yet.</p>
+            <button type="button" class="btn btn-primary" id="build-pdf">Build and save the PDF</button>
+            <p class="ok" id="pdf-ready" hidden></p>
+          </li>
+
+          <li id="handoff" class="dimmed">
+            <h3>2 — Send it in</h3>
+            <p>
+              Opens a pre-filled issue on GitHub, already signed in as you. <strong>Drag the PDF you
+              just saved into it</strong> and press submit — that is the whole job. A bot checks the
+              details, commits the paper and opens a pull request for a maintainer to review.
+            </p>
+            <div class="actions">
+              <a class="btn btn-primary" id="open-issue" href="#" target="_blank" rel="noopener" aria-disabled="true">Continue on GitHub</a>
+            </div>
+
+            <details class="diy">
+              <summary>Or do it the long way, and learn Git while you are here</summary>
+              <p>
+                Same result, more of the machinery visible: fork the repository, drop the PDF into
+                the folder below, add your entry to the JSON file, and open the pull request
+                yourself. The
+                <a href="https://accelerate-muj.github.io/resources/git-guide/">club's Git guide</a>
+                walks through every step.
+              </p>
+              <p class="paths">
+                PDF → <code id="diy-pdf-path"></code><br />
+                Entry → <code id="diy-json-path"></code>
+              </p>
+              <pre><code id="diy-json"></code></pre>
+              <p><a id="diy-link" href="https://github.com/accelerate-muj/college-materials" target="_blank" rel="noopener">Open the repository</a></p>
+            </details>
+          </li>
+        </ol>
+
+        <div class="actions">
+          <button type="button" class="btn" data-back="pages">Back</button>
+        </div>
+      </section>
+
+      <noscript>
+        <p class="lede">
+          The scanner needs JavaScript. You can still contribute by hand —
+          <a href="https://github.com/accelerate-muj/college-materials/blob/main/CONTRIBUTING.md">the
+          contributing guide</a> explains the JSON entry, and it is four lines.
+        </p>
+      </noscript>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <p>
+          Papers stay the University's property — this archive indexes them for its own students and
+          honours takedown requests. Do not upload anything you do not have the right to share.
+        </p>
+        <p class="footer-command">git checkout -b paper/your-contribution</p>
+      </div>
+    </footer>
+
+    <script src="../../src/pyq.js"></script>
+    <script src="../../src/pdf.js"></script>
+    <script src="../../src/submission.js"></script>
+    <script src="../data.js"></script>
+    <script src="add.js"></script>
+  </body>
+</html>

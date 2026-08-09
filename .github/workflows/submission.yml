@@ -1,0 +1,142 @@
+name: Paper submission
+
+# Turns an issue from the scanner into a pull request. It never merges: a
+# maintainer reviews every paper before it reaches the site.
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+# `contents: write` to push the branch, `pull-requests: write` to open the PR,
+# `issues: write` to reply. The org defaults GITHUB_TOKEN to read-only
+# (SETUP_LOG.md #35); this raises it for this workflow alone.
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: submission-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+# Actions are pinned to full commit SHAs — the org enables sha_pinning_required
+# (SETUP_LOG.md #36/#55) and rejects movable tags before the run starts.
+
+jobs:
+  process:
+    name: Process submission
+    # Either the label the scanner asks for, or the marker it writes into the
+    # body. Both, because GitHub silently drops `labels=` from a new-issue URL
+    # when the label does not exist or the author lacks write access — so the
+    # label alone would make the bot depend on repository settings the
+    # contributor cannot see. The marker travels in the body and always
+    # survives. Everything else — bug reports, questions — is ignored.
+    if: >-
+      contains(github.event.issue.labels.*.name, 'paper-submission') ||
+      contains(github.event.issue.body, 'accelerate:pyq-submission:v1')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+
+      # The issue body is untrusted input written by anyone with a GitHub
+      # account. It reaches the script through env, never through ${{ }}
+      # interpolation into a shell — expression substitution happens before the
+      # shell parses the line, so an interpolated body would be pasted in as
+      # source code. This is the exact bug campus-mapper shipped.
+      - name: Validate and stage the submission
+        id: submission
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+        run: node .github/scripts/process-submission.js
+
+      - name: Rebuild the baked archive
+        if: steps.submission.outputs.status == 'ok'
+        run: node build.js
+
+      # The same gate CI applies, run before opening the PR rather than after,
+      # so a bad record never becomes a branch.
+      - name: Validate the data
+        if: steps.submission.outputs.status == 'ok'
+        run: node .github/scripts/validate-data.js
+
+      - name: Commit and open the pull request
+        if: steps.submission.outputs.status == 'ok'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.submission.outputs.branch }}
+          PR_TITLE: ${{ steps.submission.outputs.title }}
+          PR_BODY: ${{ steps.submission.outputs.body }}
+          REPO: ${{ github.repository }}
+          BASE: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "$BRANCH"
+          git add papers data pyq/data.js
+          git commit -m "$PR_TITLE"
+          git push --force-with-lease origin "$BRANCH"
+
+          # An edited issue re-runs this workflow, so a PR may already exist.
+          existing=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/pulls?head=${REPO%%/*}:$BRANCH&state=open" \
+            | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const a=JSON.parse(s);console.log(a.length?a[0].number:'')})")
+
+          if [ -n "$existing" ]; then
+            echo "Pull request #$existing already open for $BRANCH; the push updated it."
+          else
+            node -e '
+              const body = JSON.stringify({
+                title: process.env.PR_TITLE,
+                body: process.env.PR_BODY,
+                head: process.env.BRANCH,
+                base: process.env.BASE,
+              });
+              fetch("https://api.github.com/repos/" + process.env.REPO + "/pulls", {
+                method: "POST",
+                headers: {
+                  authorization: "Bearer " + process.env.GH_TOKEN,
+                  accept: "application/vnd.github+json",
+                  "content-type": "application/json",
+                },
+                body,
+              }).then(async (r) => {
+                const data = await r.json();
+                if (!r.ok) { console.error(data); process.exit(1); }
+                console.log("Opened pull request #" + data.number);
+              });
+            '
+          fi
+
+      - name: Reply on the issue
+        if: always() && steps.submission.outputs.comment != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+          COMMENT: ${{ steps.submission.outputs.comment }}
+        run: |
+          set -euo pipefail
+          node -e '
+            fetch("https://api.github.com/repos/" + process.env.REPO + "/issues/" + process.env.NUMBER + "/comments", {
+              method: "POST",
+              headers: {
+                authorization: "Bearer " + process.env.GH_TOKEN,
+                accept: "application/vnd.github+json",
+                "content-type": "application/json",
+              },
+              body: JSON.stringify({ body: process.env.COMMENT }),
+            }).then(async (r) => {
+              if (!r.ok) { console.error(await r.text()); process.exit(1); }
+              console.log("Commented on #" + process.env.NUMBER);
+            });
+          '
